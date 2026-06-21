@@ -1,0 +1,38 @@
+---
+description: "9th Hour — core non-negotiable architecture and financial integrity rules. Always active in every conversation."
+alwaysApply: true
+---
+
+Full specs live in /docs. Read the relevant doc before writing code in that area —
+this file is only the short list of things that must NEVER be violated, in any
+phase, in any file, regardless of what's being worked on right now.
+
+## Architecture (non-negotiable)
+- Backend logic lives in `/apps/api` (Node.js + Express + Mongoose). Next.js API
+  routes in `/apps/web` only ever proxy to it via the BFF pattern — see
+  `/apps/web/src/app/api/proxy/[...path]/route.ts`. Never put business logic there.
+- Database is MongoDB via Mongoose. Never Firestore, never another DB.
+- No Python anywhere in this codebase.
+- No external Bible API of any kind. Scripture is manually curated in the
+  `DailyVerse` collection per `/docs/TRD.md` §9.
+
+## Financial integrity — see /docs/TRD.md §4 for full detail and code patterns
+- Every `Wallet`/`Transaction` write uses the atomic guarded-update pattern
+  (`findOneAndUpdate` with the balance condition in the same call as the `$inc`)
+  inside `session.withTransaction()`. Never read-then-write, even inside a transaction.
+- Exactly ONE coin exchange rate exists, read from `ExchangeRateConfig`, used only
+  in `/wallet/purchase`. Everywhere else, 1 coin = ₦1 flat. Never add a second
+  conversion anywhere in the codebase.
+- `Wallet.balance` (spendable) and `Wallet.pendingWithdrawalBalance` (minister
+  earnings) are structurally separate. Never merge them in any code path.
+- Every webhook checks `Transaction.externalRef` for an existing `completed`
+  record before crediting anything — this is the idempotency guard against replay.
+- Fees always round with `Math.ceil()`, in the platform's favor. The invariant
+  `amount === feeCharged + netAmount` must hold on every single transaction.
+
+## Build discipline
+- Build in the phases defined in `/docs/AGENT_PROMPT.md`. Finish one phase fully,
+  list every file touched, then stop and wait for explicit confirmation before
+  starting the next phase.
+- Do not build V2 features ahead of schedule, even if it seems convenient
+  mid-phase. Check `/docs/SCHEMA.md` for which collections are V2-only.

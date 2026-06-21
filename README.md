@@ -40,9 +40,25 @@ npm run dev:web          # terminal 2 — localhost:3000
 
 ## Reference Documents
 
-Build phases 2–9 are fully specified in:
+Build phases 2–9 are fully specified in `/docs`:
 - `AGENT_PROMPT.md` — phase-by-phase build plan
 - `TRD.md` — architecture, financial integrity engine
 - `SCHEMA.md` — all Mongoose models
 - `UIUX_FLOW.md` — design system, screens
 - `PRD_ADDENDUM.md` — coin exchange rate spec
+- `9TH_HOUR_FINAL_PRD.md` — client-authoritative product spec
+- `API_SETUP.md` — external service credential setup
+
+## Working in Cursor
+
+`.cursor/rules/9th-hour-core.mdc` is already in this repo and loads automatically
+on every Agent conversation — it encodes the financial integrity rules and phase
+discipline so you don't need to re-explain them each session.
+
+To start Phase 2:
+1. Open this folder in Cursor.
+2. Open Agent mode (not inline chat — Agent can edit multiple files and run terminal commands).
+3. Turn off shell command auto-run in Agent settings for this repo — review before it runs anything against the ledger.
+4. `@docs/AGENT_PROMPT.md` in your message, tell it Phase 1 already exists and is verified, and ask it to begin Phase 2.
+5. Stop it after each phase. Review the diff. Commit. Then continue.
+
