@@ -35,7 +35,30 @@ If anything you're about to write conflicts with these documents, stop and re-re
 8. **DO NOT** process a webhook without checking `Transaction.externalRef` for an existing `completed` record first (§4.4 idempotency guard).
 9. **DO NOT** build V2 features beyond what's explicitly scheduled in the phase plan below. If a feature is V2 in the PRD, model the schema (already done in `SCHEMA.md`) but do not build the endpoint or UI until its phase arrives.
 10. Every file is complete and production-ready when delivered. No `// TODO`, no stub functions, no `any` types in TypeScript.
-11. **BUILD IN PHASES.** Complete one phase fully. Stop. List every file created or modified. Wait for explicit confirmation before starting the next phase. Never look ahead and build a future phase's feature early, even if it seems convenient to do while you're "in the area."
+11. **DO NOT** write comments that read like an AI report. No citing this prompt or any spec doc inline (e.g. "Per AGENT_PROMPT.md Phase 1"), no restating what the code already says, no banner comments or box-drawing dividers, no verbose JSDoc for a function whose name already explains it. Full detail and examples in the "Comment Style" section below.
+12. **BUILD IN PHASES.** Complete one phase fully. Stop. List every file created or modified. Wait for explicit confirmation before starting the next phase. Never look ahead and build a future phase's feature early, even if it seems convenient to do while you're "in the area."
+
+---
+
+## Comment Style
+
+Write comments the way a human engineer leaves a note for a teammate — short, plain, only where the *why* isn't obvious from the code itself. This applies in every phase, to every file, as code is written — not as a cleanup pass at the end.
+
+```js
+// BAD — explains the obvious, cites the spec doc, reads like a status report
+/**
+ * 9TH HOUR — WALLET GUARD
+ * Per TRD.md §4.2, this function checks the balance before deducting,
+ * as specified in the requirements, to ensure data integrity.
+ */
+function deductBalance(userId, amount) { ... }
+
+// GOOD — terse, only the part that isn't obvious from reading the code
+// guarded decrement — see TRD §4.2 for why this can't be read-then-write
+function deductBalance(userId, amount) { ... }
+```
+
+If the code is self-evident, skip the comment entirely. Don't restate a variable or function name in English. Don't hedge ("this might," "this could potentially") — state what the code does.
 
 ---
 
@@ -215,6 +238,7 @@ RESEND_API_KEY=
 3. Mobile responsiveness pass across all screens, both themes.
 4. Run `npm audit` on both `/apps/web` and `/apps/api`, resolve high/critical findings.
 5. Wire in Sentry (or equivalent) on the Node.js backend before this phase is considered complete — not after.
+6. **Final comment sweep across the entire repo.** Search both apps for spec-doc citations inline (`grep -rn "Per AGENT_PROMPT\|Per TRD.md\|Per SCHEMA.md\|9TH HOUR —" apps/`), banner comments, and verbose JSDoc blocks left over from earlier phases. Rewrite each to the standard in "Comment Style" above — terse, human, no self-reference. This is the last thing that happens before this phase is marked complete.
 
 **Stop. List every file created. Provide a final deployment checklist. Wait for confirmation.**
 

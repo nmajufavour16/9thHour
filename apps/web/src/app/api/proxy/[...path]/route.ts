@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * 9TH HOUR — BFF PROXY
- *
- * This catch-all route is the ONLY way the browser ever reaches the backend.
- * The real Node.js/Express API URL and the INTERNAL_COMMUNICATION_KEY never
- * reach the client — both stay server-side, inside this route handler.
- *
- * Per TRD.md §2 (BFF Pattern) and AGENT_PROMPT.md Phase 1.
- */
+// Only way the browser reaches the backend. The real API URL and the
+// internal key never leave the server — both stay inside this handler.
 
 const BACKEND_URL = process.env.PRIVATE_NODE_BACKEND_URL;
 const INTERNAL_KEY = process.env.INTERNAL_COMMUNICATION_KEY;
 
 if (!BACKEND_URL || !INTERNAL_KEY) {
-  // Fail loudly at build/boot time rather than silently misrouting requests in production.
   console.error(
     "[BFF PROXY] Missing PRIVATE_NODE_BACKEND_URL or INTERNAL_COMMUNICATION_KEY in environment."
   );
@@ -25,12 +17,11 @@ async function forward(req: NextRequest, path: string[]) {
 
   const headers = new Headers(req.headers);
   headers.set("x-internal-key", INTERNAL_KEY ?? "");
-  headers.delete("host"); // avoid forwarding the Next.js host header to the backend
+  headers.delete("host");
 
   const init: RequestInit = {
     method: req.method,
     headers,
-    // GET/HEAD requests must not carry a body
     body: ["GET", "HEAD"].includes(req.method) ? undefined : await req.text(),
   };
 

@@ -1,19 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
-/**
- * 9TH HOUR — INTERNAL AUTH GUARD
- *
- * Rejects any request that doesn't carry the shared INTERNAL_COMMUNICATION_KEY
- * header set by the Next.js BFF proxy. This is the wall between "the browser"
- * and "this server" — direct calls to the API bypassing the proxy are refused.
- *
- * EXEMPTION: routes under /webhooks/* authenticate via the provider's own
- * signature scheme (Paystack HMAC-SHA512, Flutterwave verif-hash) instead,
- * since Paystack/Flutterwave obviously cannot send our internal key.
- *
- * Per AGENT_PROMPT.md Phase 1, Rule: "middleware that rejects requests
- * missing the INTERNAL_COMMUNICATION_KEY — except /webhooks/*."
- */
+// Blocks any request without the shared key from the BFF proxy.
+// Webhooks are exempt — Paystack/Flutterwave sign their own payloads instead.
 export function internalAuthGuard(req: Request, res: Response, next: NextFunction) {
   if (req.path.startsWith("/webhooks/")) {
     return next();

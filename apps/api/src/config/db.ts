@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
-/**
- * 9TH HOUR — MONGODB CONNECTION
- * Per SCHEMA.md — all financial writes downstream of this connection
- * MUST use session.withTransaction(). See TRD.md §4.2.
- */
+// Financial writes elsewhere in the app must use transactions — see TRD.md §4.2.
 export async function connectDB() {
   const uri = process.env.MONGODB_URI;
 

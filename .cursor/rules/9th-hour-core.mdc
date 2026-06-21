@@ -30,6 +30,31 @@ phase, in any file, regardless of what's being worked on right now.
 - Fees always round with `Math.ceil()`, in the platform's favor. The invariant
   `amount === feeCharged + netAmount` must hold on every single transaction.
 
+## Comment style
+Write comments like a human engineer leaving a note for a teammate — short,
+plain, only where the "why" isn't obvious from the code itself.
+
+Never:
+- Cite spec docs or this rules file inline (e.g. "Per AGENT_PROMPT.md Phase 1")
+- Restate what the code already says in English
+- Use banner comments, box-drawing characters, or repeated "====" dividers
+- Write verbose JSDoc for a function whose name already explains it
+
+```js
+// BAD — explains the obvious, cites the prompt, reads like a report
+/**
+ * 9TH HOUR — WALLET GUARD
+ * Per TRD.md §4.2, this function checks the balance before deducting.
+ */
+function deductBalance(userId, amount) { ... }
+
+// GOOD — terse, only the non-obvious part
+// guarded decrement — see TRD §4.2 for why this can't be read-then-write
+function deductBalance(userId, amount) { ... }
+```
+
+If code is self-evident, skip the comment entirely.
+
 ## Build discipline
 - Build in the phases defined in `/docs/AGENT_PROMPT.md`. Finish one phase fully,
   list every file touched, then stop and wait for explicit confirmation before

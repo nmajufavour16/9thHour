@@ -2,11 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ──────────────────────────────────────────────────────────────
-   9TH HOUR — DUAL THEME SYSTEM
-   Dark = default brand experience. Light = opt-in (white & gold).
-   Source: UIUX_FLOW.md v5.0
-   ────────────────────────────────────────────────────────────── */
+/* Dual theme — dark is default, light is the white & gold opt-in (see UIUX_FLOW.md) */
 
 :root,
 [data-theme="dark"] {

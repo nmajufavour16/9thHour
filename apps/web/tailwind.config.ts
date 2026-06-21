@@ -1,9 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// 9TH HOUR — Tailwind config mapping utilities to dual-theme CSS variables.
-// Colors resolve live from globals.css [data-theme="dark"|"light"] blocks —
-// switching the `data-theme` attribute on <html> swaps every color instantly,
-// no class changes needed anywhere in the component tree.
+// Colors map to CSS vars in globals.css — flipping data-theme on <html> swaps everything instantly.
 
 const config: Config = {
   darkMode: ["selector", '[data-theme="dark"]'],

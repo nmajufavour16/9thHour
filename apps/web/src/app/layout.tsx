@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// 9TH HOUR — Brand typography per UIUX_FLOW.md
-// Headings: Playfair Display (sacred weight) | Body/UI: DM Sans | Currency/Streaks: JetBrains Mono
+// Playfair for headings, DM Sans for body, JetBrains Mono for numbers/streaks
 const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
@@ -34,8 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // data-theme="dark" is the default brand experience per UIUX_FLOW.md.
-    // A theme toggle in Settings (Phase 9) flips this to "light" and persists the choice.
+    // dark is the default — a Settings toggle flips this to "light" later
     <html lang="en" data-theme="dark">
       <body
         className={`${playfair.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased bg-bg-primary text-text-primary`}
