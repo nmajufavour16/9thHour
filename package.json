@@ -1,0 +1,13 @@
+{
+  "name": "9th-hour",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "install:all": "npm install"
+  }
+}

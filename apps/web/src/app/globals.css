@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────
+   9TH HOUR — DUAL THEME SYSTEM
+   Dark = default brand experience. Light = opt-in (white & gold).
+   Source: UIUX_FLOW.md v5.0
+   ────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
+  --color-bg-primary:     #0A0A14;
+  --color-bg-surface:     #13131F;
+  --color-bg-elevated:    #1A1A2E;
+  --color-primary:        #6D28D9;
+  --color-primary-light:  #8B5CF6;
+  --color-gold:           #C9A84C;
+  --color-gold-light:     #E8B86D;
+  --color-text-primary:   #F5F3FF;
+  --color-text-secondary: #A89FC0;
+  --color-text-muted:     #5C5272;
+  --color-live:           #E53E3E;
+  --color-success:        #48BB78;
+  --color-error:          #F56565;
+  --color-border:         #2A2040;
+}
+
+[data-theme="light"] {
+  --color-bg-primary:     #FFFFFF;
+  --color-bg-surface:     #FAF8F3;
+  --color-bg-elevated:    #FFFFFF;
+  --color-primary:        #6D28D9;
+  --color-primary-light:  #7C3AED;
+  --color-gold:           #B8923F;
+  --color-gold-light:     #C9A84C;
+  --color-text-primary:   #1A1426;
+  --color-text-secondary: #6B5F7A;
+  --color-text-muted:     #9B92A8;
+  --color-live:           #E53E3E;
+  --color-success:        #2F9E5B;
+  --color-error:          #DC3545;
+  --color-border:         #E5E0EC;
+}
+
+body {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  font-family: var(--font-dm-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
