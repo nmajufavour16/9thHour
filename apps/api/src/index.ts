@@ -7,6 +7,9 @@ import rateLimit from "express-rate-limit";
 import { connectDB } from "./config/db";
 import { internalAuthGuard } from "./middleware/internalAuth";
 import authRoutes from "./routes/auth";
+import verificationRoutes from "./routes/verification";
+import fellowshipRoutes from "./routes/fellowships";
+import reportRoutes from "./routes/reports";
 
 // Dedicated Express API. Only the Next.js BFF proxy calls this directly —
 // never the browser. Business logic and the financial engine live here.
@@ -33,6 +36,9 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/verification", verificationRoutes);
+app.use("/fellowships", fellowshipRoutes);
+app.use("/reports", reportRoutes);
 
 async function start() {
   await connectDB();

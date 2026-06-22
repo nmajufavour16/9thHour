@@ -47,7 +47,7 @@ const ministerProfileSchema = new Schema(
 );
 
 ministerProfileSchema.index({ tier: 1, badge: 1 });
-ministerProfileSchema.index({ slug: 1 }, { unique: true });
+// slug unique index is declared inline on the field above — no duplicate needed
 
 export const MinisterProfile =
   models.MinisterProfile || model("MinisterProfile", ministerProfileSchema);

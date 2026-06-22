@@ -8,11 +8,13 @@ export async function connectDB() {
     throw new Error("MONGODB_URI is not set. Check apps/api/.env");
   }
 
-  try {
-    await mongoose.connect(uri);
-    console.log("[MongoDB] Connected successfully");
-  } catch (error) {
-    console.error("[MongoDB] Connection failed:", error);
-    process.exit(1);
-  }
+  mongoose.connection.on("connected", () => console.log("[MongoDB] Connected"));
+  mongoose.connection.on("error", (err) => console.error("[MongoDB] Error:", err));
+  mongoose.connection.on("disconnected", () => console.warn("[MongoDB] Disconnected — retrying"));
+
+  // Don't crash the process on initial failure — Mongoose retries automatically.
+  // The server stays up so routes can surface real error traces during diagnosis.
+  mongoose
+    .connect(uri, { serverSelectionTimeoutMS: 10000 })
+    .catch((err) => console.error("[MongoDB] Initial connection failed:", err.message));
 }
