@@ -9,7 +9,7 @@ export default function Home() {
         of prayer.&rdquo; — Acts 3:1
       </p>
       <p className="mt-6 text-sm text-text-muted font-mono">
-        Phase 1 scaffold — continue in Cursor from here.
+        Page Contents coming up soon...
       </p>
     </main>
   );

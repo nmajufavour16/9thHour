@@ -27,6 +27,8 @@ router.post("/sync", async (req: Request, res: Response) => {
     churchName?: string;
   };
 
+  console.log("[/auth/sync] body keys received:", Object.keys(req.body ?? {}));
+
   if (!idToken || !fullName || !username) {
     return res.status(400).json({ error: "idToken, fullName, and username are required" });
   }

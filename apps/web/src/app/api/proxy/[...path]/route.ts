@@ -17,12 +17,19 @@ async function forward(req: NextRequest, path: string[]) {
 
   const headers = new Headers(req.headers);
   headers.set("x-internal-key", INTERNAL_KEY ?? "");
+  // Let Node.js/Undici set these from the actual body — forwarding the
+  // browser-supplied values causes HTTP/1.1 framing conflicts that make
+  // express.json() silently drop the body (req.body becomes {}).
   headers.delete("host");
+  headers.delete("content-length");
+  headers.delete("transfer-encoding");
+
+  const body = ["GET", "HEAD"].includes(req.method) ? undefined : await req.text();
 
   const init: RequestInit = {
     method: req.method,
     headers,
-    body: ["GET", "HEAD"].includes(req.method) ? undefined : await req.text(),
+    body,
   };
 
   const backendResponse = await fetch(targetUrl, init);

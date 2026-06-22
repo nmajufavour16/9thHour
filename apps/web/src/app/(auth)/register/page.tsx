@@ -35,16 +35,27 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  async function syncWithBackend(idToken: string) {
+  async function syncWithBackend(
+    idToken: string,
+    payload: {
+      fullName: string;
+      username: string;
+      role: Role;
+      ministryName?: string;
+      churchName?: string;
+    }
+  ) {
     const res = await fetch("/api/proxy/auth/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         idToken,
-        fullName,
-        username,
-        role,
-        ...(role === "minister" ? { ministryName, churchName } : {}),
+        fullName: payload.fullName,
+        username: payload.username,
+        role: payload.role,
+        ...(payload.role === "minister"
+          ? { ministryName: payload.ministryName, churchName: payload.churchName }
+          : {}),
       }),
     });
     if (!res.ok) {
@@ -58,6 +69,20 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
+    // Explicit JS validation — HTML `required` can be bypassed by autofill on
+    // some browsers where the visible value is filled but onChange never fired.
+    const trimmedFullName = fullName.trim();
+    const trimmedUsername = username.trim().replace(/^@/, "");
+
+    if (!trimmedFullName) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!trimmedUsername) {
+      setError("Please enter a username (without the @ sign).");
+      return;
+    }
+
     const failing = PASSWORD_RULES.find((r) => !r.test(password));
     if (failing) {
       setError(`Password needs: ${failing.label.toLowerCase()}.`);
@@ -68,7 +93,12 @@ export default function RegisterPage() {
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       const idToken = await credential.user.getIdToken();
-      await syncWithBackend(idToken);
+      await syncWithBackend(idToken, {
+        fullName: trimmedFullName,
+        username: trimmedUsername,
+        role,
+        ...(role === "minister" ? { ministryName, churchName } : {}),
+      });
       router.push("/");
     } catch (err: unknown) {
       if (err instanceof FirebaseError) {
@@ -87,7 +117,15 @@ export default function RegisterPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-      await syncWithBackend(idToken);
+      const derivedUsername = (result.user.email?.split("@")[0] ?? `user-${Date.now()}`)
+        .replace(/[^a-z0-9_]/gi, "")
+        .slice(0, 30);
+      await syncWithBackend(idToken, {
+        fullName: result.user.displayName ?? "9th Hour User",
+        username: derivedUsername || `user${Date.now()}`,
+        role,
+        ...(role === "minister" ? { ministryName, churchName } : {}),
+      });
       router.push("/");
     } catch (err: unknown) {
       if (err instanceof FirebaseError) {

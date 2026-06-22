@@ -17,6 +17,10 @@ import reportRoutes from "./routes/reports";
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// The BFF proxy forwards X-Forwarded-For — tell Express to trust it
+// so express-rate-limit doesn't throw ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
