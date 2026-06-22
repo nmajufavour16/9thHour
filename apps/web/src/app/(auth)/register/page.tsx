@@ -13,12 +13,13 @@ import { getAuthErrorMessage } from "../../../lib/authErrors";
 
 type Role = "believer" | "minister";
 
-// Password rules enforced by Firebase Authentication (default policy):
-// minimum 8 characters, at least one uppercase letter, at least one number.
+// Password rules enforced by Firebase Authentication (current policy):
+// min 8 chars, one uppercase letter, one number, one special character.
 const PASSWORD_RULES = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
   { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
   { label: "One number", test: (p: string) => /[0-9]/.test(p) },
+  { label: "One special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
 ];
 
 export default function RegisterPage() {
