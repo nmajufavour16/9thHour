@@ -4,7 +4,6 @@ import { useState, FormEvent } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithPopup,
-  GoogleAuthProvider,
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 import Link from "next/link";
