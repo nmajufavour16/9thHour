@@ -27,8 +27,6 @@ router.post("/sync", async (req: Request, res: Response) => {
     churchName?: string;
   };
 
-  console.log("[/auth/sync] body keys received:", Object.keys(req.body ?? {}));
-
   if (!idToken || !fullName || !username) {
     return res.status(400).json({ error: "idToken, fullName, and username are required" });
   }
@@ -61,23 +59,18 @@ router.post("/sync", async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
 
   try {
-    let user: (typeof User.prototype) | null = null;
-    let wallet: (typeof Wallet.prototype) | null = null;
-    let ministerProfile: (typeof MinisterProfile.prototype) | null = null;
+    let isNewUser = false;
 
     await session.withTransaction(async () => {
-      // Idempotent — return the existing record if the user already synced.
+      // Idempotent — bail early if the user already synced.
       const existing = await User.findById(uid).session(session);
       if (existing) {
-        user = existing;
-        wallet = await Wallet.findOne({ userId: uid }).session(session);
-        if (isMinister) {
-          ministerProfile = await MinisterProfile.findOne({ userId: uid }).session(session);
-        }
         return;
       }
 
-      user = await User.create(
+      isNewUser = true;
+
+      await User.create(
         [
           {
             _id: uid,
@@ -88,9 +81,9 @@ router.post("/sync", async (req: Request, res: Response) => {
           },
         ],
         { session }
-      ).then((docs) => docs[0]);
+      );
 
-      wallet = await Wallet.create(
+      await Wallet.create(
         [
           {
             userId: uid,
@@ -99,11 +92,11 @@ router.post("/sync", async (req: Request, res: Response) => {
           },
         ],
         { session }
-      ).then((docs) => docs[0]);
+      );
 
       if (isMinister) {
-        // Tier 1 (Community Leader) requires no documents per PRD §11.1.
-        ministerProfile = await MinisterProfile.create(
+        // Tier 1 (Community Leader) is self-declared and requires no documents.
+        await MinisterProfile.create(
           [
             {
               userId: uid,
@@ -115,14 +108,14 @@ router.post("/sync", async (req: Request, res: Response) => {
             },
           ],
           { session }
-        ).then((docs) => docs[0]);
+        );
       }
     });
 
     return res.status(200).json({
       uid,
       role: isMinister ? "minister" : "believer",
-      isNewUser: true,
+      isNewUser,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

@@ -40,9 +40,11 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRoutes);
-app.use("/verification", verificationRoutes);
 app.use("/fellowships", fellowshipRoutes);
-app.use("/reports", reportRoutes);
+// Mounted at root: each router spells out its full paths so admin actions live
+// under /admin/* while the minister/user-facing routes keep their own prefix.
+app.use("/", verificationRoutes);
+app.use("/", reportRoutes);
 
 async function start() {
   await connectDB();

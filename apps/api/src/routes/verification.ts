@@ -12,7 +12,7 @@ router.use(firebaseAuth);
 // POST /verification/submit
 // Minister submits ID + selfie URLs for Tier 2 or Tier 3 review.
 // Image upload itself happens client-side to Firebase Storage; we receive the resulting URLs.
-router.post("/submit", requireRole("minister"), async (req: Request, res: Response) => {
+router.post("/verification/submit", requireRole("minister"), async (req: Request, res: Response) => {
   const uid = req.firebaseUid!;
 
   const {
@@ -96,7 +96,7 @@ router.post("/submit", requireRole("minister"), async (req: Request, res: Respon
 
 // GET /verification/my-status
 // Minister polls their current verification request status.
-router.get("/my-status", requireRole("minister"), async (req: Request, res: Response) => {
+router.get("/verification/my-status", requireRole("minister"), async (req: Request, res: Response) => {
   const uid = req.firebaseUid!;
 
   const request = await VerificationRequest.findOne({ ministerId: uid })
@@ -111,7 +111,7 @@ router.get("/my-status", requireRole("minister"), async (req: Request, res: Resp
 });
 
 // GET /verification/queue — admin sees all pending requests
-router.get("/queue", requireRole("admin"), async (req: Request, res: Response) => {
+router.get("/verification/queue", requireRole("admin"), async (req: Request, res: Response) => {
   const requests = await VerificationRequest.find({ status: { $in: ["pending", "in_review"] } })
     .sort({ createdAt: 1 })
     .select("-idImageUrl -selfieImageUrl -phoneNumber -bankAccountNumber");
@@ -120,7 +120,7 @@ router.get("/queue", requireRole("admin"), async (req: Request, res: Response) =
 });
 
 // GET /verification/:id — admin fetches a single request (includes sensitive fields)
-router.get("/:id", requireRole("admin"), async (req: Request, res: Response) => {
+router.get("/verification/:id", requireRole("admin"), async (req: Request, res: Response) => {
   const request = await VerificationRequest.findById(req.params.id)
     .select("+idImageUrl +selfieImageUrl +phoneNumber +bankAccountNumber");
 
@@ -129,7 +129,7 @@ router.get("/:id", requireRole("admin"), async (req: Request, res: Response) => 
 });
 
 // POST /verification/:id/approve
-router.post("/:id/approve", requireRole("admin"), async (req: Request, res: Response) => {
+router.post("/admin/verification/:id/approve", requireRole("admin"), async (req: Request, res: Response) => {
   const adminUid = req.firebaseUid!;
   const { reviewNotes } = req.body as { reviewNotes?: string };
 
@@ -176,7 +176,7 @@ router.post("/:id/approve", requireRole("admin"), async (req: Request, res: Resp
 });
 
 // POST /verification/:id/reject
-router.post("/:id/reject", requireRole("admin"), async (req: Request, res: Response) => {
+router.post("/admin/verification/:id/reject", requireRole("admin"), async (req: Request, res: Response) => {
   const adminUid = req.firebaseUid!;
   const { rejectionReason } = req.body as { rejectionReason: string };
 
