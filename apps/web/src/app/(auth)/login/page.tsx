@@ -128,6 +128,18 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
+          <p className="text-center text-xs mt-5 leading-5" style={{ color: "var(--color-text-muted)" }}>
+            By continuing, you agree to our{" "}
+            <Link href="/terms-of-service" className="underline" style={{ color: "var(--color-primary-light)" }}>
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" className="underline" style={{ color: "var(--color-primary-light)" }}>
+              Privacy Policy
+            </Link>
+            .
+          </p>
+
           <p className="text-center text-sm mt-6" style={{ color: "var(--color-text-secondary)" }}>
             Don&apos;t have an account?{" "}
             <Link href="/register" className="font-medium underline" style={{ color: "var(--color-primary-light)" }}>
