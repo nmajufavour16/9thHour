@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { Check, Church, Circle, User } from "lucide-react";
 import { auth, googleProvider } from "../../../lib/firebase";
 import { getAuthErrorMessage } from "../../../lib/authErrors";
+import Logo from "../../../components/Logo";
 
 type Role = "believer" | "minister";
 
@@ -142,13 +143,10 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8 bg-bg-primary">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="font-playfair text-4xl font-bold mb-2" style={{ color: "var(--color-gold)" }}>
-            9th Hour
+        <div className="text-center mt-4 mb-6">
+          <h1 className="mb-0">
+            <Logo className="h-28 w-auto mx-auto" />
           </h1>
-          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            The Hour of Prayer is Now
-          </p>
         </div>
 
         <div

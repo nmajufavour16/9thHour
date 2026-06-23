@@ -51,3 +51,18 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Brand logo swaps with the theme. Dark is the default, so the light variant
+   starts hidden — both selectors key off data-theme on <html> so there's no flash. */
+.logo-dark-only {
+  display: block;
+}
+.logo-light-only {
+  display: none;
+}
+[data-theme="light"] .logo-dark-only {
+  display: none;
+}
+[data-theme="light"] .logo-light-only {
+  display: block;
+}
