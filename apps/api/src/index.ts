@@ -6,10 +6,14 @@ import rateLimit from "express-rate-limit";
 
 import { connectDB } from "./config/db";
 import { internalAuthGuard } from "./middleware/internalAuth";
+import { warnIfPaystackUnconfigured } from "./config/paystack";
+import { seedExchangeRate } from "./config/seedExchangeRate";
 import authRoutes from "./routes/auth";
 import verificationRoutes from "./routes/verification";
 import fellowshipRoutes from "./routes/fellowships";
 import reportRoutes from "./routes/reports";
+import walletRoutes from "./routes/wallet";
+import webhookRoutes from "./routes/webhooks";
 
 // Dedicated Express API. Only the Next.js BFF proxy calls this directly —
 // never the browser. Business logic and the financial engine live here.
@@ -23,7 +27,15 @@ app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+// Keep the raw body around so the Paystack webhook can verify the HMAC-SHA512
+// signature against the exact bytes that were signed.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as express.Request).rawBody = buf;
+    },
+  })
+);
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -45,9 +57,21 @@ app.use("/fellowships", fellowshipRoutes);
 // under /admin/* while the minister/user-facing routes keep their own prefix.
 app.use("/", verificationRoutes);
 app.use("/", reportRoutes);
+app.use("/", walletRoutes);
+app.use("/", webhookRoutes);
 
 async function start() {
   await connectDB();
+
+  // Non-fatal: connectDB is fire-and-forget, so the DB may not be up yet. Don't
+  // let a seed failure take down auth and every other route.
+  try {
+    await seedExchangeRate();
+  } catch (err) {
+    console.error("[9th Hour API] Exchange rate seed skipped:", err);
+  }
+
+  warnIfPaystackUnconfigured();
 
   app.listen(PORT, () => {
     console.log(`[9th Hour API] Listening on port ${PORT}`);
