@@ -1,11 +1,12 @@
 import { Router, Request, Response } from "express";
+import { Types } from "mongoose";
 import {
   ensurePaystackConfigured,
   verifyPaystackSignature,
 } from "../config/paystack";
 import { Transaction } from "../models/Transaction";
 import { ExchangeRateConfig } from "../models/ExchangeRateConfig";
-import { applyFundingCredit } from "../services/walletService";
+import { applyFundingCredit, settleWithdrawal } from "../services/walletService";
 
 const router = Router();
 
@@ -23,6 +24,25 @@ router.post("/webhooks/paystack", ensurePaystackConfigured, async (req: Request,
     event?: string;
     data?: { reference?: string; amount?: number; metadata?: Record<string, unknown> };
   };
+
+  // Outgoing transfers finalize a withdrawal: success completes it, failure or
+  // reversal refunds pendingWithdrawalBalance. settleWithdrawal is idempotent.
+  if (
+    event.event === "transfer.success" ||
+    event.event === "transfer.failed" ||
+    event.event === "transfer.reversed"
+  ) {
+    const ref = event.data?.reference;
+    try {
+      if (ref && Types.ObjectId.isValid(ref)) {
+        await settleWithdrawal(ref, event.event === "transfer.success");
+      }
+      return res.status(200).json({ received: true });
+    } catch (err) {
+      console.error("[/webhooks/paystack] transfer settle error:", err);
+      return res.status(500).json({ error: "Webhook processing failed" });
+    }
+  }
 
   // Acknowledge anything we don't act on so Paystack stops retrying.
   if (event.event !== "charge.success" || !event.data?.reference) {

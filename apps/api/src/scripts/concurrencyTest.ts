@@ -2,6 +2,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import { Wallet } from "../models/Wallet";
 import { Transaction } from "../models/Transaction";
+import { MinisterProfile } from "../models/MinisterProfile";
 import { giveOffering } from "../services/walletService";
 
 // Race-condition proof: fire many concurrent gives against a balance that only
@@ -18,9 +19,18 @@ async function run() {
 
   await Wallet.deleteMany({ userId: { $in: [GIVER, MINISTER] } });
   await Transaction.deleteMany({ fromUserId: GIVER });
+  await MinisterProfile.deleteMany({ userId: MINISTER });
 
   await Wallet.create({ userId: GIVER, balance: AMOUNT }); // funds for exactly one
   await Wallet.create({ userId: MINISTER });
+  await MinisterProfile.create({
+    userId: MINISTER,
+    ministryName: "Concurrency Test Ministry",
+    slug: "concurrency-test-ministry",
+    churchName: "Test Church",
+    canAcceptOfferings: true,
+    isSuspended: false,
+  });
 
   const results = await Promise.allSettled(
     Array.from({ length: ATTEMPTS }).map(() =>
@@ -56,6 +66,7 @@ async function run() {
 
   await Wallet.deleteMany({ userId: { $in: [GIVER, MINISTER] } });
   await Transaction.deleteMany({ fromUserId: GIVER });
+  await MinisterProfile.deleteMany({ userId: MINISTER });
   await mongoose.disconnect();
   process.exit(pass ? 0 : 1);
 }

@@ -71,6 +71,71 @@ export async function initializePaystackTransaction(params: PaystackInitParams):
   };
 }
 
+export async function createTransferRecipient(params: {
+  name: string;
+  accountNumber: string;
+  bankCode: string;
+}): Promise<string> {
+  const response = await fetch(`${PAYSTACK_BASE_URL}/transferrecipient`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "nuban",
+      name: params.name,
+      account_number: params.accountNumber,
+      bank_code: params.bankCode,
+      currency: "NGN",
+    }),
+  });
+
+  const json = (await response.json()) as {
+    status?: boolean;
+    message?: string;
+    data?: { recipient_code: string };
+  };
+
+  if (!response.ok || !json.status || !json.data) {
+    throw new Error(json.message || "Failed to create transfer recipient");
+  }
+  return json.data.recipient_code;
+}
+
+export async function initiatePaystackTransfer(params: {
+  amountKobo: number;
+  recipientCode: string;
+  reference: string;
+  reason?: string;
+}): Promise<{ transferCode: string; status: string }> {
+  const response = await fetch(`${PAYSTACK_BASE_URL}/transfer`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      source: "balance",
+      amount: params.amountKobo,
+      recipient: params.recipientCode,
+      reference: params.reference,
+      reason: params.reason ?? "9th Hour withdrawal",
+    }),
+  });
+
+  const json = (await response.json()) as {
+    status?: boolean;
+    message?: string;
+    data?: { transfer_code: string; status: string };
+  };
+
+  if (!response.ok || !json.status || !json.data) {
+    throw new Error(json.message || "Transfer initiation failed");
+  }
+  return { transferCode: json.data.transfer_code, status: json.data.status };
+}
+
 // Paystack signs each webhook with HMAC-SHA512 over the raw request body.
 export function verifyPaystackSignature(
   rawBody: Buffer | undefined,

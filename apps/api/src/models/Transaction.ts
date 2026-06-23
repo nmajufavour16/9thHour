@@ -31,7 +31,13 @@ const transactionSchema = new Schema(
 
 transactionSchema.index({ fromUserId: 1, createdAt: -1 });
 transactionSchema.index({ toMinisterId: 1, createdAt: -1 });
-// idempotency guard against webhook replay — unique only when externalRef is set
-transactionSchema.index({ externalRef: 1 }, { unique: true, sparse: true });
+// Idempotency guard against webhook replay. Partial (not sparse) on purpose:
+// externalRef defaults to null, and a sparse index still indexes null values —
+// which would make every fee-only txn (tithe/offering/withdrawal) collide. The
+// partial filter enforces uniqueness ONLY on real string references.
+transactionSchema.index(
+  { externalRef: 1 },
+  { unique: true, partialFilterExpression: { externalRef: { $type: "string" } } }
+);
 
 export const Transaction = models.Transaction || model("Transaction", transactionSchema);

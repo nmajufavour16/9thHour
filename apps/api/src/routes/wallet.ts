@@ -1,18 +1,31 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { Types } from "mongoose";
-import { firebaseAuth } from "../middleware/firebaseAuth";
-import { ensurePaystackConfigured, initializePaystackTransaction } from "../config/paystack";
+import { firebaseAuth, requireRole } from "../middleware/firebaseAuth";
+import {
+  ensurePaystackConfigured,
+  initializePaystackTransaction,
+  createTransferRecipient,
+  initiatePaystackTransfer,
+} from "../config/paystack";
 import { User } from "../models/User";
 import { Transaction } from "../models/Transaction";
 import { ExchangeRateConfig } from "../models/ExchangeRateConfig";
-import { giveOffering, WalletError } from "../services/walletService";
+import { MinisterProfile } from "../models/MinisterProfile";
+import { VerificationRequest } from "../models/VerificationRequest";
+import {
+  giveOffering,
+  requestWithdrawal,
+  settleWithdrawal,
+  WalletError,
+} from "../services/walletService";
 
 const router = Router();
 
 router.use(firebaseAuth);
 
 const MIN_FUNDING_NAIRA = 100;
+const MIN_WITHDRAWAL_COINS = 100;
 
 // POST /wallet/purchase/initialize — start a Paystack payment to fund the wallet.
 // The only Naira→coin conversion point in the system (TRD §4.1).
@@ -129,5 +142,85 @@ router.post("/wallet/give", async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// POST /wallet/withdraw — minister cashes out earnings to their verified bank
+// account (TRD §4.7). Debits only pendingWithdrawalBalance; 7% fee; refunds on
+// transfer failure. The async result is finalized by the transfer webhook.
+router.post(
+  "/wallet/withdraw",
+  requireRole("minister"),
+  ensurePaystackConfigured,
+  async (req: Request, res: Response) => {
+    const ministerId = req.firebaseUid!;
+    const { amount, bankCode } = req.body as { amount?: number; bankCode?: string };
+
+    if (typeof amount !== "number" || !Number.isInteger(amount) || amount < MIN_WITHDRAWAL_COINS) {
+      return res
+        .status(400)
+        .json({ error: `amount must be a whole number of at least ${MIN_WITHDRAWAL_COINS} coins` });
+    }
+    if (!bankCode || typeof bankCode !== "string") {
+      return res.status(400).json({ error: "bankCode is required" });
+    }
+
+    try {
+      const profile = await MinisterProfile.findOne({ userId: ministerId }).select("isSuspended");
+      if (profile?.isSuspended) {
+        return res.status(403).json({ error: "Withdrawals are temporarily unavailable" });
+      }
+
+      // Payout destination comes from the most recent approved verification.
+      const verification = await VerificationRequest.findOne({
+        userId: ministerId,
+        status: "approved",
+      })
+        .sort({ createdAt: -1 })
+        .select("bankAccountName +bankAccountNumber");
+
+      if (!verification?.bankAccountName || !verification?.bankAccountNumber) {
+        return res.status(400).json({ error: "No verified bank account on file" });
+      }
+
+      // Atomic debit first — money leaves the ledger before we call out.
+      const wd = await requestWithdrawal(ministerId, amount);
+
+      try {
+        const recipientCode = await createTransferRecipient({
+          name: verification.bankAccountName,
+          accountNumber: verification.bankAccountNumber,
+          bankCode,
+        });
+        const transfer = await initiatePaystackTransfer({
+          amountKobo: wd.netPayout * 100,
+          recipientCode,
+          reference: wd.transactionId,
+        });
+
+        return res.status(200).json({
+          message: "Withdrawal initiated",
+          transactionId: wd.transactionId,
+          amount: wd.amount,
+          feeCharged: wd.feeCharged,
+          netPayout: wd.netPayout,
+          status: transfer.status,
+        });
+      } catch (transferErr) {
+        // Transfer couldn't be started — reverse the debit so the minister is
+        // never left with deducted-but-unpaid coins.
+        await settleWithdrawal(wd.transactionId, false);
+        console.error("[/wallet/withdraw] transfer failed, refunded:", transferErr);
+        return res
+          .status(502)
+          .json({ error: "Withdrawal could not be processed. Your balance has been restored." });
+      }
+    } catch (err) {
+      if (err instanceof WalletError) {
+        return res.status(err.httpStatus).json({ error: err.message });
+      }
+      console.error("[/wallet/withdraw] Unhandled error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 export default router;

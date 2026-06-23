@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Wallet } from "../models/Wallet";
 import { Transaction } from "../models/Transaction";
 import { LiveSession } from "../models/LiveSession";
+import { MinisterProfile } from "../models/MinisterProfile";
 import { computeFee, buildOfferingReceipt, OfferingReceipt } from "../utils/fees";
 
 export class WalletError extends Error {
@@ -50,6 +51,18 @@ export async function giveOffering(params: GiveOfferingParams): Promise<GiveOffe
 
   try {
     await session.withTransaction(async () => {
+      // Recipient must be a minister who can currently accept offerings. Checked
+      // inside the transaction so a suspension can't slip in between check and
+      // credit. The error stays generic — don't leak suspension/disciplinary
+      // state to the giver.
+      const recipientProfile = await MinisterProfile.findOne({ userId: toMinisterId })
+        .select("canAcceptOfferings isSuspended")
+        .session(session);
+
+      if (!recipientProfile || !recipientProfile.canAcceptOfferings || recipientProfile.isSuspended) {
+        throw new WalletError(403, "Recipient is not eligible to receive offerings");
+      }
+
       // Guarded decrement — condition and mutation in one atomic op. If balance
       // is insufficient, no document matches and updatedGiver is null.
       const updatedGiver = await Wallet.findOneAndUpdate(
@@ -112,6 +125,104 @@ export async function giveOffering(params: GiveOfferingParams): Promise<GiveOffe
     netAmount,
     receipt: buildOfferingReceipt(type, amount, feeCharged, netAmount),
   };
+}
+
+interface RequestWithdrawalResult {
+  transactionId: string;
+  amount: number;
+  feeCharged: number;
+  netPayout: number;
+}
+
+// Atomic withdrawal debit (TRD §4.7 steps 2–5). Debits ONLY pendingWithdrawalBalance
+// (earnings) — never spendable balance — with the same guarded pattern, and logs a
+// pending withdrawal transaction. The external payout is triggered by the caller;
+// settleWithdrawal finalizes or refunds based on the transfer result.
+export async function requestWithdrawal(
+  ministerId: string,
+  amount: number
+): Promise<RequestWithdrawalResult> {
+  const feeCharged = computeFee("withdrawal", amount); // 7%
+  const netPayout = amount - feeCharged;
+
+  if (amount !== feeCharged + netPayout) {
+    throw new WalletError(500, "Fee reconciliation failed");
+  }
+
+  const session = await mongoose.startSession();
+  let transactionId = "";
+
+  try {
+    await session.withTransaction(async () => {
+      const updated = await Wallet.findOneAndUpdate(
+        { userId: ministerId, pendingWithdrawalBalance: { $gte: amount } },
+        { $inc: { pendingWithdrawalBalance: -amount } },
+        { new: true, session }
+      );
+
+      if (!updated) {
+        throw new WalletError(402, "Insufficient withdrawable balance");
+      }
+
+      const [txn] = await Transaction.create(
+        [
+          {
+            fromUserId: ministerId,
+            type: "withdrawal",
+            amount,
+            feeCharged,
+            netAmount: netPayout,
+            status: "pending",
+          },
+        ],
+        { session }
+      );
+
+      transactionId = txn._id.toString();
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { transactionId, amount, feeCharged, netPayout };
+}
+
+// Finalizes a pending withdrawal. On success → completed. On failure → mark failed
+// and refund the full amount back to pendingWithdrawalBalance (TRD §4.7 step 8).
+// The guarded pending→terminal status transition makes this idempotent, so a
+// replayed transfer webhook can't double-refund or double-complete.
+export async function settleWithdrawal(
+  transactionId: string,
+  success: boolean
+): Promise<{ settled: boolean }> {
+  const session = await mongoose.startSession();
+  let settled = false;
+
+  try {
+    await session.withTransaction(async () => {
+      const txn = await Transaction.findOneAndUpdate(
+        { _id: transactionId, type: "withdrawal", status: "pending" },
+        { $set: { status: success ? "completed" : "failed" } },
+        { new: true, session }
+      );
+
+      // Already settled (or unknown) — no-op keeps this idempotent.
+      if (!txn) return;
+
+      if (!success) {
+        await Wallet.findOneAndUpdate(
+          { userId: txn.fromUserId },
+          { $inc: { pendingWithdrawalBalance: txn.amount } },
+          { new: true, session }
+        );
+      }
+      settled = true;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { settled };
 }
 
 interface ApplyFundingParams {
