@@ -1,6 +1,6 @@
-import Link from "next/link";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import BackButton from "./BackButton";
 
 // Renders legally-reviewed markdown verbatim. Headings use Playfair, body DM Sans,
 // purple accents on links/subheadings — matching the dark theme tokens.
@@ -110,13 +110,7 @@ export default function LegalDocument({ content }: { content: string }) {
   return (
     <main className="min-h-screen bg-bg-primary">
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-10 sm:py-16">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm mb-8 transition-opacity hover:opacity-80"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          <span aria-hidden>←</span> Back
-        </Link>
+        <BackButton fallbackHref="/" />
 
         <article>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>

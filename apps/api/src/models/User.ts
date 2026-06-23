@@ -19,6 +19,9 @@ const userSchema = new Schema(
     prayerStreak: { type: Number, default: 0 },
     lastPrayerDate: { type: Date, default: null },
     isVerified: { type: Boolean, default: false },
+
+    // Earned titles (e.g. "fire_prayer", "bible_scholar"). No points — PRD §18.
+    badges: { type: [String], default: [] },
   },
   { timestamps: true }
 );

@@ -14,6 +14,10 @@ import fellowshipRoutes from "./routes/fellowships";
 import reportRoutes from "./routes/reports";
 import walletRoutes from "./routes/wallet";
 import webhookRoutes from "./routes/webhooks";
+import dailyVerseRoutes from "./routes/dailyVerse";
+import quizRoutes from "./routes/quiz";
+import streakRoutes from "./routes/streak";
+import { registerCronJobs } from "./cron";
 
 // Dedicated Express API. Only the Next.js BFF proxy calls this directly —
 // never the browser. Business logic and the financial engine live here.
@@ -59,6 +63,9 @@ app.use("/", verificationRoutes);
 app.use("/", reportRoutes);
 app.use("/", walletRoutes);
 app.use("/", webhookRoutes);
+app.use("/", dailyVerseRoutes);
+app.use("/", quizRoutes);
+app.use("/", streakRoutes);
 
 async function start() {
   await connectDB();
@@ -72,6 +79,8 @@ async function start() {
   }
 
   warnIfPaystackUnconfigured();
+
+  registerCronJobs();
 
   app.listen(PORT, () => {
     console.log(`[9th Hour API] Listening on port ${PORT}`);
