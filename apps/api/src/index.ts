@@ -17,6 +17,9 @@ import webhookRoutes from "./routes/webhooks";
 import dailyVerseRoutes from "./routes/dailyVerse";
 import quizRoutes from "./routes/quiz";
 import streakRoutes from "./routes/streak";
+import liveSessionRoutes from "./routes/liveSessions";
+import agoraRoutes from "./routes/agora";
+import { warnIfAgoraUnconfigured } from "./config/agora";
 import { registerCronJobs } from "./cron";
 
 // Dedicated Express API. Only the Next.js BFF proxy calls this directly —
@@ -66,6 +69,8 @@ app.use("/", webhookRoutes);
 app.use("/", dailyVerseRoutes);
 app.use("/", quizRoutes);
 app.use("/", streakRoutes);
+app.use("/", liveSessionRoutes);
+app.use("/", agoraRoutes);
 
 async function start() {
   await connectDB();
@@ -79,6 +84,7 @@ async function start() {
   }
 
   warnIfPaystackUnconfigured();
+  warnIfAgoraUnconfigured();
 
   registerCronJobs();
 
