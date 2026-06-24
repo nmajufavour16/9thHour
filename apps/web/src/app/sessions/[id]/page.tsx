@@ -68,8 +68,10 @@ export default function SessionPage() {
     );
   }
 
+  // The owning minister hosts; everyone else watches.
   const isHost = !!user && session.ministerId === user.uid;
 
+  // Host flips the session to "live", then the stage renders for them.
   async function startSession() {
     setStarting(true);
     try {
@@ -82,6 +84,7 @@ export default function SessionPage() {
     }
   }
 
+  // Show the video stage once the session is live (or the host just started it).
   const canRenderStage = joined || session.status === "live";
 
   return (

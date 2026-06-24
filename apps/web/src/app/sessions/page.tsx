@@ -24,6 +24,7 @@ export default function SessionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
+  // Pull the live + upcoming session list from the backend.
   async function load() {
     setFetching(true);
     try {
@@ -36,6 +37,7 @@ export default function SessionsPage() {
     }
   }
 
+  // Wait for auth to settle before calling the API (apiFetch needs a token).
   useEffect(() => {
     if (!loading && user) load();
   }, [loading, user]);
@@ -104,6 +106,8 @@ export default function SessionsPage() {
   );
 }
 
+// Inline form for a minister to schedule a new session. The backend enforces
+// the minister role, so a non-minister submit comes back as an error here.
 function CreateSession({ onCreated }: { onCreated: () => void }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("prayer");

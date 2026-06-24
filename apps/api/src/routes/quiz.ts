@@ -73,12 +73,14 @@ router.post("/quiz/attempt", async (req: Request, res: Response) => {
       wasCorrect,
     });
   } catch (err) {
+    // Duplicate key = this user already attempted today's quiz.
     if ((err as { code?: number }).code === 11000) {
       return res.status(409).json({ error: "Already attempted today's quiz" });
     }
     throw err;
   }
 
+  // Award the badge once; $addToSet keeps it idempotent across days.
   if (wasCorrect) {
     await User.findByIdAndUpdate(uid, { $addToSet: { badges: QUIZ_BADGE } });
   }

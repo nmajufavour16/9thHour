@@ -7,7 +7,8 @@ const router = Router();
 
 router.use(firebaseAuth);
 
-const STREAK_BADGE = "fire_prayer"; // 7-day streak, PRD §9.6
+// A 7-day run earns the "Fire Prayer" badge.
+const STREAK_BADGE = "fire_prayer";
 const STREAK_BADGE_THRESHOLD = 7;
 
 // GET /streak/me — current streak and whether today's check-in is done.
@@ -31,7 +32,7 @@ router.get("/streak/me", async (req: Request, res: Response) => {
 });
 
 // POST /streak/checkin — once per WAT day. Increments if yesterday's check-in
-// is intact, otherwise starts a fresh streak at 1. No penalty (PRD §16 item 11).
+// is intact, otherwise starts a fresh streak at 1. A missed day has no penalty.
 router.post("/streak/checkin", async (req: Request, res: Response) => {
   const uid = req.firebaseUid!;
 
@@ -44,10 +45,12 @@ router.post("/streak/checkin", async (req: Request, res: Response) => {
   const today = watDateString();
   const lastDate = user.lastPrayerDate ? watDateString(user.lastPrayerDate) : null;
 
+  // Already done today — report current streak instead of double-counting.
   if (lastDate === today) {
     return res.status(409).json({ error: "Already checked in today", prayerStreak: user.prayerStreak });
   }
 
+  // Continue the run only if the last check-in was yesterday; else restart at 1.
   const newStreak = lastDate === watYesterdayString() ? user.prayerStreak + 1 : 1;
   const now = new Date();
 

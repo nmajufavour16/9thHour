@@ -26,8 +26,9 @@ async function runDailyVerseBroadcast() {
 }
 
 // Midnight WAT: anyone who didn't check in yesterday loses their streak.
-// No penalty of any kind (PRD §16 item 11).
+// The streak just resets to 0 — there's no penalty of any kind.
 async function runStreakResetSweep() {
+  // Keep streaks for users who checked in yesterday; reset everyone else.
   const cutoff = watDayStartUtc(watYesterdayString());
   const result = await User.updateMany(
     {

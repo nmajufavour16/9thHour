@@ -11,6 +11,10 @@ import type {
 import { Mic, MicOff, Video, VideoOff, WifiOff, PhoneOff } from "lucide-react";
 import { apiFetch } from "../lib/api";
 
+// Renders one Agora RTC session. The host publishes camera + mic; everyone else
+// subscribes. On a poor downlink the UI drops to audio-only to stay usable on
+// weak connections. Join/leave are reported to the backend for attendance.
+
 interface TokenResponse {
   token: string;
   appId: string;
@@ -28,10 +32,11 @@ interface Props {
 
 type Phase = "connecting" | "live" | "ended" | "error";
 
-// downlinkNetworkQuality 4/5/6 = Bad / Very Bad / Down (TRD §7.1).
+// Agora rates downlink 0–6; 4/5/6 mean Bad / Very Bad / Down.
 const POOR_DOWNLINK = 4;
 
 export default function LiveSession({ sessionId, channelName, isHost, title, onLeave }: Props) {
+  // UI state shown to the viewer.
   const [phase, setPhase] = useState<Phase>("connecting");
   const [error, setError] = useState<string | null>(null);
   const [audioOnly, setAudioOnly] = useState(false);
@@ -39,6 +44,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
 
+  // Live Agora objects kept in refs so re-renders don't recreate the connection.
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const localVideoRef = useRef<ICameraVideoTrack | null>(null);
   const localAudioRef = useRef<IMicrophoneAudioTrack | null>(null);
@@ -71,10 +77,14 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
     }
   }, [isHost]);
 
+  // Whole connection lifecycle: set up Agora, fetch a token, join, then publish
+  // (host) or wait for the host (audience). Runs once per mount.
   useEffect(() => {
+    // Guards against state updates after the component unmounts mid-connect.
     let cancelled = false;
 
     async function start() {
+      // SDK is browser-only, so it's imported lazily to keep it out of SSR.
       const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
       AgoraRTC.setLogLevel(2);
 
@@ -82,6 +92,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
       clientRef.current = client;
       await client.setClientRole(isHost ? "host" : "audience");
 
+      // Subscribe to remote media as it appears; skip video once in audio-only.
       client.on("user-published", async (user, mediaType) => {
         if (mediaType === "video" && audioOnlyRef.current && !isHost) return;
         await client.subscribe(user, mediaType);
@@ -89,15 +100,18 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
         setRemoteUsers([...client.remoteUsers]);
       });
 
+      // Keep the rendered remote list in sync as people drop or stop tracks.
       client.on("user-unpublished", () => setRemoteUsers([...client.remoteUsers]));
       client.on("user-left", () => setRemoteUsers([...client.remoteUsers]));
 
+      // Bandwidth watchdog — degrade to audio-only when the downlink is poor.
       client.on("network-quality", (stats: NetworkQuality) => {
         if (stats.downlinkNetworkQuality >= POOR_DOWNLINK) {
           void forceAudioOnly();
         }
       });
 
+      // Token is minted server-side; host vs audience decides publish rights.
       const role = isHost ? "host" : "audience";
       const tok = await apiFetch<TokenResponse>("agora/token", {
         method: "POST",
@@ -107,6 +121,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
       await client.join(tok.appId, channelName, tok.token, tok.account);
       if (cancelled) return;
 
+      // Only the host captures and publishes local camera + mic.
       if (isHost) {
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         const videoTrack = await AgoraRTC.createCameraVideoTrack();
@@ -116,6 +131,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
         await client.publish([audioTrack, videoTrack]);
       }
 
+      // Best-effort attendance ping; a failure here shouldn't break the stream.
       await apiFetch(`sessions/${sessionId}/attendance/join`, { method: "POST" }).catch(
         () => undefined
       );
@@ -129,6 +145,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
       setPhase("error");
     });
 
+    // Teardown: release tracks, leave the channel, and mark attendance left.
     return () => {
       cancelled = true;
       const client = clientRef.current;
@@ -148,6 +165,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Host mic toggle — enabling/disabling keeps the track published.
   function toggleMic() {
     const audio = localAudioRef.current;
     if (!audio) return;
@@ -156,6 +174,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
     setMicOn(next);
   }
 
+  // Host camera toggle — disabled while forced into audio-only.
   function toggleCam() {
     const video = localVideoRef.current;
     if (!video || audioOnly) return;
@@ -164,6 +183,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
     setCamOn(next);
   }
 
+  // Host ends the session for everyone; an audience member just leaves.
   async function endOrLeave() {
     if (isHost) {
       await apiFetch(`sessions/${sessionId}/end`, { method: "POST" }).catch(() => undefined);
@@ -255,6 +275,8 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
   );
 }
 
+// Audience view: shows the host's video, or a status message when there's no
+// video to show (still connecting, audio-only, or host not streaming yet).
 function RemoteStage({
   users,
   audioOnly,
@@ -283,6 +305,7 @@ function RemoteStage({
   return <RemoteVideo user={host} />;
 }
 
+// Plays one remote user's video into its own div, and stops it on cleanup.
 function RemoteVideo({ user }: { user: IAgoraRTCRemoteUser }) {
   const ref = useRef<HTMLDivElement | null>(null);
 

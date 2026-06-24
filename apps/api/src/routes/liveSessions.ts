@@ -111,7 +111,9 @@ router.post("/sessions/:id/end", requireRole("minister"), async (req: Request, r
 
   const now = new Date();
 
-  // Stamp leftAt/durationSeconds on everyone still marked as present.
+  // Anyone still "present" never sent a leave (tab closed, disconnect, etc.),
+  // so close their record here using a pipeline update that computes each
+  // viewer's duration from their own joinedAt.
   await Attendance.updateMany({ sessionId: session._id, leftAt: null }, [
     {
       $set: {
@@ -136,6 +138,8 @@ router.post("/sessions/:id/attendance/join", async (req: Request, res: Response)
   if (!session) return;
   const uid = req.firebaseUid!;
 
+  // First join inserts the record; rejoining is a no-op thanks to the unique
+  // index, so the viewer count only moves on the genuine first arrival.
   const result = await Attendance.updateOne(
     { sessionId: session._id, userId: uid },
     { $setOnInsert: { sessionId: session._id, userId: uid, joinedAt: new Date() } },
@@ -157,6 +161,7 @@ router.post("/sessions/:id/attendance/leave", async (req: Request, res: Response
   const uid = req.firebaseUid!;
   const sessionId = new Types.ObjectId(req.params.id);
 
+  // Idempotent: no record or an already-closed one just returns success.
   const attendance = await Attendance.findOne({ sessionId, userId: uid });
   if (!attendance || attendance.leftAt) {
     return res.json({ left: true });
@@ -192,6 +197,7 @@ router.get("/sessions/:id/missed", requireRole("minister"), async (req: Request,
     return res.status(404).json({ error: "You do not lead a fellowship" });
   }
 
+  // "Missed" = fellowship members with no attendance row for this session.
   const attendeeIds = await Attendance.find({ sessionId: session._id }).distinct("userId");
   const missed = await User.find({
     fellowshipId: fellowship._id,

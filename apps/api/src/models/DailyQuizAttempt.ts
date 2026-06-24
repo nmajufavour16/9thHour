@@ -1,7 +1,7 @@
 import { Schema, model, models, Types } from "mongoose";
 
-// Badges only, no points (points system removed per PRD §18).
-// The unique compound index enforces one attempt per user per verse.
+// Badges only — there is no points system. The unique compound index enforces
+// one attempt per user per verse.
 const dailyQuizAttemptSchema = new Schema(
   {
     userId: { type: String, ref: "User", required: true },

@@ -20,7 +20,7 @@ const userSchema = new Schema(
     lastPrayerDate: { type: Date, default: null },
     isVerified: { type: Boolean, default: false },
 
-    // Earned titles (e.g. "fire_prayer", "bible_scholar"). No points — PRD §18.
+    // Earned titles (e.g. "fire_prayer", "bible_scholar"). No points system.
     badges: { type: [String], default: [] },
   },
   { timestamps: true }
