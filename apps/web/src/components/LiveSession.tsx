@@ -10,6 +10,7 @@ import type {
 } from "agora-rtc-sdk-ng";
 import { Mic, MicOff, Video, VideoOff, WifiOff, PhoneOff } from "lucide-react";
 import { apiFetch } from "../lib/api";
+import SessionChat from "./SessionChat";
 
 // Renders one Agora RTC session. The host publishes camera + mic; everyone else
 // subscribes. On a poor downlink the UI drops to audio-only to stay usable on
@@ -271,6 +272,8 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
           {isHost ? "End session" : "Leave"}
         </button>
       </div>
+
+      {phase === "live" && <SessionChat sessionId={sessionId} />}
     </div>
   );
 }

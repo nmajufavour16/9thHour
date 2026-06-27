@@ -1,4 +1,5 @@
 import "dotenv/config";
+import http from "http";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -19,8 +20,10 @@ import quizRoutes from "./routes/quiz";
 import streakRoutes from "./routes/streak";
 import liveSessionRoutes from "./routes/liveSessions";
 import agoraRoutes from "./routes/agora";
+import prayerRequestRoutes from "./routes/prayerRequests";
 import { warnIfAgoraUnconfigured } from "./config/agora";
 import { registerCronJobs } from "./cron";
+import { initSocket } from "./socket";
 
 // Dedicated Express API. Only the Next.js BFF proxy calls this directly —
 // never the browser. Business logic and the financial engine live here.
@@ -71,6 +74,10 @@ app.use("/", quizRoutes);
 app.use("/", streakRoutes);
 app.use("/", liveSessionRoutes);
 app.use("/", agoraRoutes);
+app.use("/", prayerRequestRoutes);
+
+const httpServer = http.createServer(app);
+initSocket(httpServer);
 
 async function start() {
   await connectDB();
@@ -88,8 +95,8 @@ async function start() {
 
   registerCronJobs();
 
-  app.listen(PORT, () => {
-    console.log(`[9th Hour API] Listening on port ${PORT}`);
+  httpServer.listen(PORT, () => {
+    console.log(`[9th Hour API] Listening on port ${PORT} (HTTP + Socket.io)`);
   });
 }
 

@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { DailyVerse } from "../models/DailyVerse";
 import { User } from "../models/User";
 import { broadcastToAllUsers } from "../config/fcm";
+import { escalateStalePrayerRequests } from "../services/prayerDispatch";
 import { watDateString, watYesterdayString, watDayStartUtc } from "../utils/watDate";
 
 const WAT_TZ = "Africa/Lagos";
@@ -40,7 +41,20 @@ async function runStreakResetSweep() {
   console.log(`[cron] Streak reset sweep — ${result.modifiedCount} streak(s) reset`);
 }
 
+async function runPrayerEscalation() {
+  const count = await escalateStalePrayerRequests();
+  if (count > 0) {
+    console.log(`[cron] Prayer escalation — ${count} request(s) broadcast fellowship-wide`);
+  }
+}
+
 export function registerCronJobs() {
+  cron.schedule("* * * * *", () => {
+    runPrayerEscalation().catch((err) =>
+      console.error("[cron] Prayer escalation failed:", err)
+    );
+  });
+
   cron.schedule("30 5 * * *", () => {
     runDailyVerseBroadcast().catch((err) =>
       console.error("[cron] Daily verse broadcast failed:", err)
@@ -53,5 +67,7 @@ export function registerCronJobs() {
     );
   }, { timezone: WAT_TZ });
 
-  console.log("[cron] Scheduled daily verse broadcast (5:30 WAT) and streak reset (midnight WAT)");
+  console.log(
+    "[cron] Scheduled prayer escalation (every minute), daily verse (5:30 WAT), streak reset (midnight WAT)"
+  );
 }
