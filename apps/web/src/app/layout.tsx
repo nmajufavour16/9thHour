@@ -42,7 +42,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('9h-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);var l=document.createElement('link');l.rel='preload';l.as='image';l.href=t==='light'?'/logo-light.png':'/logo-dark.png';document.head.appendChild(l);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('9h-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);var l=document.createElement('link');l.rel='preload';l.as='image';l.href=t==='light'?'/logo-light.svg':'/logo-dark.svg';document.head.appendChild(l);}catch(e){}})();`,
           }}
         />
       </head>
