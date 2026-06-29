@@ -21,7 +21,10 @@ import streakRoutes from "./routes/streak";
 import liveSessionRoutes from "./routes/liveSessions";
 import agoraRoutes from "./routes/agora";
 import prayerRequestRoutes from "./routes/prayerRequests";
+import postRoutes from "./routes/posts";
+import airtimeRoutes from "./routes/airtime";
 import { warnIfAgoraUnconfigured } from "./config/agora";
+import { warnIfFlutterwaveUnconfigured } from "./config/flutterwave";
 import { registerCronJobs } from "./cron";
 import { initSocket } from "./socket";
 
@@ -75,6 +78,8 @@ app.use("/", streakRoutes);
 app.use("/", liveSessionRoutes);
 app.use("/", agoraRoutes);
 app.use("/", prayerRequestRoutes);
+app.use("/", postRoutes);
+app.use("/", airtimeRoutes);
 
 const httpServer = http.createServer(app);
 initSocket(httpServer);
@@ -92,6 +97,7 @@ async function start() {
 
   warnIfPaystackUnconfigured();
   warnIfAgoraUnconfigured();
+  warnIfFlutterwaveUnconfigured();
 
   registerCronJobs();
 

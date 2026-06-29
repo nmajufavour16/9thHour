@@ -1,4 +1,5 @@
 import Logo from "../components/Logo";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -10,9 +11,17 @@ export default function Home() {
         &ldquo;Peter and John went to the temple at the ninth hour, the hour
         of prayer.&rdquo; — Acts 3:1
       </p>
-      <p className="mt-6 text-sm text-text-muted font-mono">
-        Page Contents coming up soon...
-      </p>
+      <nav className="mt-8 flex flex-wrap justify-center gap-4 text-sm">
+        <Link href="/feed" className="underline" style={{ color: "var(--color-primary-light)" }}>
+          Fellowship Feed
+        </Link>
+        <Link href="/sessions" className="underline" style={{ color: "var(--color-primary-light)" }}>
+          Live Sessions
+        </Link>
+        <Link href="/airtime" className="underline" style={{ color: "var(--color-primary-light)" }}>
+          Buy Airtime
+        </Link>
+      </nav>
     </main>
   );
 }

@@ -225,6 +225,100 @@ export async function settleWithdrawal(
   return { settled };
 }
 
+interface InitiateAirtimeParams {
+  userId: string;
+  amount: number;
+  phoneNumber: string;
+  reference: string;
+}
+
+// Debits spendable balance before Flutterwave is called (TRD §6). Caller settles
+// the pending transaction after the provider responds.
+export async function initiateAirtimePurchase(
+  params: InitiateAirtimeParams
+): Promise<{ transactionId: string }> {
+  const { userId, amount, phoneNumber, reference } = params;
+
+  if (amount !== Math.floor(amount) || amount < 1) {
+    throw new WalletError(400, "amount must be a whole number of at least 1 coin");
+  }
+
+  const session = await mongoose.startSession();
+  let transactionId = "";
+
+  try {
+    await session.withTransaction(async () => {
+      const updated = await Wallet.findOneAndUpdate(
+        { userId, balance: { $gte: amount } },
+        { $inc: { balance: -amount } },
+        { new: true, session }
+      );
+
+      if (!updated) {
+        throw new WalletError(402, "Insufficient balance");
+      }
+
+      const [txn] = await Transaction.create(
+        [
+          {
+            fromUserId: userId,
+            type: "airtime",
+            amount,
+            feeCharged: 0,
+            netAmount: amount,
+            status: "pending",
+            externalRef: reference,
+            metadata: { phoneNumber },
+          },
+        ],
+        { session }
+      );
+
+      transactionId = txn._id.toString();
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { transactionId };
+}
+
+// Finalizes or refunds a pending airtime purchase. Guarded pending→terminal
+// transition keeps webhook replays idempotent.
+export async function settleAirtimePurchase(
+  reference: string,
+  success: boolean
+): Promise<{ settled: boolean }> {
+  const session = await mongoose.startSession();
+  let settled = false;
+
+  try {
+    await session.withTransaction(async () => {
+      const txn = await Transaction.findOneAndUpdate(
+        { externalRef: reference, type: "airtime", status: "pending" },
+        { $set: { status: success ? "completed" : "failed" } },
+        { new: true, session }
+      );
+
+      if (!txn) return;
+
+      if (!success && txn.fromUserId) {
+        await Wallet.findOneAndUpdate(
+          { userId: txn.fromUserId },
+          { $inc: { balance: txn.amount } },
+          { new: true, session }
+        );
+      }
+
+      settled = true;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { settled };
+}
+
 interface ApplyFundingParams {
   reference: string;
   userId: string;

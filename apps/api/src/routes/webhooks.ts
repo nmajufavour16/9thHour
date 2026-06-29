@@ -4,9 +4,12 @@ import {
   ensurePaystackConfigured,
   verifyPaystackSignature,
 } from "../config/paystack";
+import {
+  verifyFlutterwaveWebhookHash,
+} from "../config/flutterwave";
 import { Transaction } from "../models/Transaction";
 import { ExchangeRateConfig } from "../models/ExchangeRateConfig";
-import { applyFundingCredit, settleWithdrawal } from "../services/walletService";
+import { applyFundingCredit, settleWithdrawal, settleAirtimePurchase } from "../services/walletService";
 
 const router = Router();
 
@@ -70,6 +73,61 @@ router.post("/webhooks/paystack", ensurePaystackConfigured, async (req: Request,
   } catch (err) {
     console.error("[/webhooks/paystack] processing error:", err);
     // 500 → Paystack retries later; idempotency guard makes retries safe.
+    return res.status(500).json({ error: "Webhook processing failed" });
+  }
+});
+
+// POST /webhooks/flutterwave — bill payment status updates from Flutterwave.
+router.post("/webhooks/flutterwave", async (req: Request, res: Response) => {
+  const verifHash = req.headers["verif-hash"] as string | undefined;
+
+  if (!verifyFlutterwaveWebhookHash(verifHash)) {
+    return res.status(401).json({ error: "Invalid webhook hash" });
+  }
+
+  const event = req.body as {
+    event?: string;
+    data?: {
+      tx_ref?: string;
+      reference?: string;
+      status?: string;
+    };
+  };
+
+  const reference = event.data?.tx_ref ?? event.data?.reference;
+  if (!reference) {
+    return res.status(200).json({ received: true });
+  }
+
+  try {
+    const alreadyDone = await Transaction.findOne({
+      externalRef: reference,
+      status: "completed",
+      type: "airtime",
+    });
+    if (alreadyDone) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
+    const status = (event.data?.status ?? "").toLowerCase();
+    const success =
+      event.event === "charge.completed" ||
+      status === "successful" ||
+      status === "success";
+
+    const failed =
+      event.event === "charge.failed" ||
+      status === "failed";
+
+    if (success) {
+      await settleAirtimePurchase(reference, true);
+    } else if (failed) {
+      await settleAirtimePurchase(reference, false);
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (err) {
+    console.error("[/webhooks/flutterwave] processing error:", err);
     return res.status(500).json({ error: "Webhook processing failed" });
   }
 });
