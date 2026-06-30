@@ -4,12 +4,16 @@ initSentry();
 
 import http from "http";
 import express from "express";
+// Must load before any router is defined — patches Express so async handler
+// rejections are forwarded to the central error handler instead of hanging.
+import "express-async-errors";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
 import { connectDB } from "./lib/db";
 import { internalAuthGuard } from "./middleware/internalAuth";
+import { errorHandler } from "./middleware/errorHandler";
 import { warnIfPaystackUnconfigured } from "./lib/paystack";
 import { seedExchangeRate } from "./config/seedExchangeRate";
 import authRoutes from "./routes/auth";
@@ -110,6 +114,10 @@ async function start() {
 
   // Sentry error handler must be registered after routes, before listen.
   Sentry.setupExpressErrorHandler(app);
+
+  // Central error handler — last in the chain. Sentry captures first, then this
+  // formats a clean response (503 for infra/DB failures, 500 otherwise).
+  app.use(errorHandler);
 
   httpServer.listen(PORT, () => {
     console.log(`[9th Hour API] Listening on port ${PORT} (HTTP + Socket.io)`);

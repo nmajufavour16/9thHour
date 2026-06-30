@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { adminAuth } from "../lib/firebase";
 import { firebaseAuth } from "../middleware/firebaseAuth";
+import { isDbConnectionError } from "../middleware/errorHandler";
 import { User } from "../models/User";
 import { MinisterProfile } from "../models/MinisterProfile";
 import { Wallet } from "../models/Wallet";
@@ -37,7 +38,7 @@ router.post("/sync", async (req: Request, res: Response) => {
     decoded = await adminAuth.verifyIdToken(idToken);
   } catch (err) {
     // Most common cause: FIREBASE_ADMIN_PRIVATE_KEY has literal \n instead of real newlines.
-    // The replace(/\\n/g, "\n") in config/firebase.ts handles this — if you see
+    // The replace(/\\n/g, "\n") in lib/firebase.ts handles this — if you see
     // "invalid_grant" or "PEM_read_bio" errors here, the key in .env is malformed.
     console.error("[/auth/sync] verifyIdToken failed:", err);
     return res.status(401).json({ error: "Invalid or expired Firebase ID token" });
@@ -122,6 +123,12 @@ router.post("/sync", async (req: Request, res: Response) => {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes("duplicate key") || message.includes("E11000")) {
       return res.status(409).json({ error: "Username or email is already taken" });
+    }
+    // A DB connectivity failure is infrastructure, not a client error → 503.
+    if (isDbConnectionError(err)) {
+      return res
+        .status(503)
+        .json({ error: "Service temporarily unavailable. Please try again shortly." });
     }
     // Log the full object so the stack trace appears in the terminal.
     console.error("[/auth/sync] Unhandled error:", err);
