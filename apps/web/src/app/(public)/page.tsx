@@ -1,39 +1,49 @@
+"use client";
+
 import Logo from "@/components/ui/Logo";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
-const NAV_LINKS = [
-  { href: "/feed", label: "Fellowship Feed" },
-  { href: "/sessions", label: "Live Sessions" },
-  { href: "/airtime", label: "Buy Airtime" },
-  { href: "/login", label: "Sign In" },
-  { href: "/admin", label: "Admin" },
-] as const;
-
+// Lightweight public landing for logged-out visitors. Authenticated users are
+// sent straight to the social home — the two surfaces stay distinct.
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/home");
+    }
+  }, [loading, user, router]);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-8 text-center">
       <div className="mb-6 h-20 flex items-center justify-center">
         <Logo className="h-20 w-auto" />
       </div>
-      <p
-        className="max-w-md text-sm sm:text-base leading-relaxed"
-        style={{ color: "var(--color-text-secondary)" }}
-      >
-        &ldquo;Peter and John went to the temple at the ninth hour, the hour
-        of prayer.&rdquo; — Acts 3:1
+      <p className="max-w-md text-sm sm:text-base leading-relaxed text-text-secondary">
+        &ldquo;Peter and John went to the temple at the ninth hour, the hour of prayer.&rdquo; — Acts 3:1
       </p>
-      <nav className="mt-8 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-        {NAV_LINKS.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="underline underline-offset-2 py-1"
-            style={{ color: "var(--color-primary-light)" }}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
+      <p className="mt-3 max-w-md text-sm text-text-muted">
+        A place to pray, share, give, and belong — any hour of the day.
+      </p>
+      <div className="mt-8 flex flex-col sm:flex-row gap-3">
+        <Link
+          href="/register"
+          className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
+          style={{ background: "var(--color-primary)" }}
+        >
+          Create account
+        </Link>
+        <Link
+          href="/login"
+          className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-border text-text-primary"
+        >
+          Sign in
+        </Link>
+      </div>
     </main>
   );
 }
