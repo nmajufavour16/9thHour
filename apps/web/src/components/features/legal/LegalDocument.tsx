@@ -1,6 +1,6 @@
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import BackButton from "./BackButton";
+import BackButton from "@/components/ui/BackButton";
 
 // Renders legally-reviewed markdown verbatim. Headings use Playfair, body DM Sans,
 // purple accents on links/subheadings — matching the dark theme tokens.

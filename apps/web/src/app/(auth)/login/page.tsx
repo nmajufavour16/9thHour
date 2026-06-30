@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, googleProvider } from "../../../lib/firebase";
 import { getAuthErrorMessage } from "../../../lib/authErrors";
-import Logo from "../../../components/Logo";
+import Logo from "@/components/ui/Logo";
 
 export default function LoginPage() {
   const router = useRouter();

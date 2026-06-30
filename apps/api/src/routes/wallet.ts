@@ -7,7 +7,7 @@ import {
   initializePaystackTransaction,
   createTransferRecipient,
   initiatePaystackTransfer,
-} from "../config/paystack";
+} from "../lib/paystack";
 import { User } from "../models/User";
 import { Transaction } from "../models/Transaction";
 import { ExchangeRateConfig } from "../models/ExchangeRateConfig";

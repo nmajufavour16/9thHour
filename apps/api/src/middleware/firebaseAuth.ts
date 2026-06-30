@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { adminAuth } from "../config/firebase";
+import { adminAuth } from "../lib/firebase";
 import { User } from "../models/User";
 
 // Verifies the Firebase ID token from Authorization: Bearer <token>,

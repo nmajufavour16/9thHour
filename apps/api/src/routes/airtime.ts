@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { firebaseAuth } from "../middleware/firebaseAuth";
-import { ensureFlutterwaveConfigured, purchaseAirtimeBill } from "../config/flutterwave";
+import { ensureFlutterwaveConfigured, purchaseAirtimeBill } from "../lib/flutterwave";
 import { Wallet } from "../models/Wallet";
 import {
   initiateAirtimePurchase,

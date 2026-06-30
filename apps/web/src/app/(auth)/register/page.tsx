@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { Check, Church, Circle, User } from "lucide-react";
 import { auth, googleProvider } from "../../../lib/firebase";
 import { getAuthErrorMessage } from "../../../lib/authErrors";
-import Logo from "../../../components/Logo";
+import Logo from "@/components/ui/Logo";
 
 type Role = "believer" | "minister";
 

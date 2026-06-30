@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { initSentry, Sentry } from "./config/sentry";
+import { initSentry, Sentry } from "./lib/sentry";
 initSentry();
 
 import http from "http";
@@ -8,9 +8,9 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
-import { connectDB } from "./config/db";
+import { connectDB } from "./lib/db";
 import { internalAuthGuard } from "./middleware/internalAuth";
-import { warnIfPaystackUnconfigured } from "./config/paystack";
+import { warnIfPaystackUnconfigured } from "./lib/paystack";
 import { seedExchangeRate } from "./config/seedExchangeRate";
 import authRoutes from "./routes/auth";
 import verificationRoutes from "./routes/verification";
@@ -27,11 +27,11 @@ import prayerRequestRoutes from "./routes/prayerRequests";
 import postRoutes from "./routes/posts";
 import airtimeRoutes from "./routes/airtime";
 import adminRoutes from "./routes/admin";
-import { warnIfAgoraUnconfigured } from "./config/agora";
-import { warnIfFlutterwaveUnconfigured } from "./config/flutterwave";
-import { warnIfResendUnconfigured } from "./config/resend";
-import { registerCronJobs } from "./cron";
-import { initSocket } from "./socket";
+import { warnIfAgoraUnconfigured } from "./lib/agora";
+import { warnIfFlutterwaveUnconfigured } from "./lib/flutterwave";
+import { warnIfResendUnconfigured } from "./lib/resend";
+import { registerCronJobs } from "./lib/cron";
+import { initSocket } from "./lib/socket";
 
 // Dedicated Express API. Only the Next.js BFF proxy calls this directly —
 // never the browser. Business logic and the financial engine live here.

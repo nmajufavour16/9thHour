@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "../components/ThemeProvider";
-import ThemeToggle from "../components/ThemeToggle";
+import "@/styles/globals.css";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 // Playfair for headings, DM Sans for body, JetBrains Mono for numbers/streaks
 const playfair = Playfair_Display({

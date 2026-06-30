@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Shield, RefreshCw } from "lucide-react";
-import { apiFetch } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
-import { useUser } from "../../hooks/useUser";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useUser";
 
 interface Overview {
   openReports: number;

@@ -1,6 +1,6 @@
 import express from "express";
 import http from "http";
-import { ensurePaystackConfigured } from "../config/paystack";
+import { ensurePaystackConfigured } from "../lib/paystack";
 
 // Proves the credential guard: with PAYSTACK_SECRET_KEY / PAYSTACK_WEBHOOK_SECRET
 // unset, a Paystack-touching route returns a clean 503 (never a raw SDK error).

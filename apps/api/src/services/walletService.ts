@@ -3,7 +3,8 @@ import { Wallet } from "../models/Wallet";
 import { Transaction } from "../models/Transaction";
 import { LiveSession } from "../models/LiveSession";
 import { MinisterProfile } from "../models/MinisterProfile";
-import { computeFee, buildOfferingReceipt, OfferingReceipt } from "../utils/fees";
+import { computeFee, buildOfferingReceipt } from "../lib/fees";
+import { OfferingReceipt } from "@9thhour/shared-types";
 
 export class WalletError extends Error {
   httpStatus: number;

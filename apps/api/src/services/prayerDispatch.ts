@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import { PrayerRequest } from "../models/PrayerRequest";
 import { User } from "../models/User";
 import { MinisterProfile } from "../models/MinisterProfile";
-import { getIO } from "../socket";
+import { getIO } from "../lib/socket";
 import { notifyFellowshipMinisters, notifyUser } from "./notifications";
 
 export interface PrayerRequestDoc {

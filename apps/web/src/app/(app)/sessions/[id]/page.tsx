@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Radio } from "lucide-react";
-import { apiFetch } from "../../../lib/api";
-import { useAuth } from "../../../hooks/useAuth";
-import LiveSession from "../../../components/LiveSession";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import LiveSession from "@/components/features/live/LiveSession";
 
 interface SessionDetail {
   _id: string;

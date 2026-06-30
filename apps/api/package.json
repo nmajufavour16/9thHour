@@ -4,11 +4,14 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
+    "predev": "tsc -p ../../packages/shared-types/tsconfig.json",
     "dev": "tsx watch src/index.ts",
+    "prebuild": "tsc -p ../../packages/shared-types/tsconfig.json",
     "build": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@9thhour/shared-types": "*",
     "@sentry/node": "^10.62.0",
     "agora-token": "^2.0.5",
     "cors": "^2.8.5",

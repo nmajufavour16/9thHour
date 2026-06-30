@@ -1,9 +1,9 @@
 import cron from "node-cron";
 import { DailyVerse } from "../models/DailyVerse";
 import { User } from "../models/User";
-import { broadcastToAllUsers } from "../config/fcm";
+import { broadcastToAllUsers } from "./fcm";
 import { escalateStalePrayerRequests } from "../services/prayerDispatch";
-import { watDateString, watYesterdayString, watDayStartUtc } from "../utils/watDate";
+import { watDateString, watYesterdayString, watDayStartUtc } from "./watDate";
 
 const WAT_TZ = "Africa/Lagos";
 

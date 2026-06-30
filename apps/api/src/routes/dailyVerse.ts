@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { firebaseAuth, requireRole } from "../middleware/firebaseAuth";
 import { DailyVerse } from "../models/DailyVerse";
-import { watDateString } from "../utils/watDate";
+import { watDateString } from "../lib/watDate";
 
 const router = Router();
 

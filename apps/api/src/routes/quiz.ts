@@ -3,7 +3,7 @@ import { firebaseAuth } from "../middleware/firebaseAuth";
 import { DailyVerse } from "../models/DailyVerse";
 import { DailyQuizAttempt } from "../models/DailyQuizAttempt";
 import { User } from "../models/User";
-import { watDateString } from "../utils/watDate";
+import { watDateString } from "../lib/watDate";
 
 const router = Router();
 

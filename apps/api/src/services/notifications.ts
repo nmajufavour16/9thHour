@@ -1,4 +1,4 @@
-import { messaging } from "../config/fcm";
+import { messaging } from "../lib/fcm";
 
 export function fellowshipMinistersTopic(fellowshipId: string): string {
   return `fellowship-ministers-${fellowshipId}`;

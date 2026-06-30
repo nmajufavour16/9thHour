@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState, FormEvent } from "react";
 import Link from "next/link";
 import { Plus, Loader2 } from "lucide-react";
-import { apiFetch } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PostAuthor {
   fullName: string;

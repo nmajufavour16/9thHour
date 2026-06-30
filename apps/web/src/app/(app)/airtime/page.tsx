@@ -3,8 +3,8 @@
 import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
 import { Smartphone } from "lucide-react";
-import { apiFetch } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const AMOUNTS = [100, 500, 1000, 2000, 5000] as const;
 

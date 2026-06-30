@@ -1,5 +1,5 @@
-import { getFromEmail, getResendClient, isResendConfigured } from "../config/resend";
-import { OfferingReceipt } from "../utils/fees";
+import { getFromEmail, getResendClient, isResendConfigured } from "../lib/resend";
+import { OfferingReceipt } from "@9thhour/shared-types";
 
 export async function sendOfferingReceiptEmail(
   toEmail: string,

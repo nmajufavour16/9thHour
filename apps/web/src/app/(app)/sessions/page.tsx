@@ -3,8 +3,8 @@
 import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
 import { Radio, Plus, Calendar } from "lucide-react";
-import { apiFetch } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SessionSummary {
   _id: string;

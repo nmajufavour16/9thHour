@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
-import { connectSocket, getSocket } from "../lib/socket";
+import { connectSocket, getSocket } from "@/lib/socket";
 
 interface ChatMessage {
   sessionId: string;

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { adminAuth } from "../config/firebase";
+import { adminAuth } from "../lib/firebase";
 import { firebaseAuth } from "../middleware/firebaseAuth";
 import { User } from "../models/User";
 import { MinisterProfile } from "../models/MinisterProfile";

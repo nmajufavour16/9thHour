@@ -3,10 +3,10 @@ import { Types } from "mongoose";
 import {
   ensurePaystackConfigured,
   verifyPaystackSignature,
-} from "../config/paystack";
+} from "../lib/paystack";
 import {
   verifyFlutterwaveWebhookHash,
-} from "../config/flutterwave";
+} from "../lib/flutterwave";
 import { Transaction } from "../models/Transaction";
 import { ExchangeRateConfig } from "../models/ExchangeRateConfig";
 import { applyFundingCredit, settleWithdrawal, settleAirtimePurchase } from "../services/walletService";

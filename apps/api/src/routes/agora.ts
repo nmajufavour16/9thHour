@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { firebaseAuth } from "../middleware/firebaseAuth";
-import { ensureAgoraConfigured, buildRtcToken } from "../config/agora";
+import { ensureAgoraConfigured, buildRtcToken } from "../lib/agora";
 import { LiveSession } from "../models/LiveSession";
 
 const router = Router();

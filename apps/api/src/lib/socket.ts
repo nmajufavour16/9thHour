@@ -1,7 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { Types } from "mongoose";
-import { adminAuth } from "../config/firebase";
+import { adminAuth } from "./firebase";
 import { User } from "../models/User";
 import { LiveSession } from "../models/LiveSession";
 
