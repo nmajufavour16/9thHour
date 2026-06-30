@@ -1,4 +1,7 @@
 import "dotenv/config";
+import { initSentry, Sentry } from "./config/sentry";
+initSentry();
+
 import http from "http";
 import express from "express";
 import helmet from "helmet";
@@ -23,8 +26,10 @@ import agoraRoutes from "./routes/agora";
 import prayerRequestRoutes from "./routes/prayerRequests";
 import postRoutes from "./routes/posts";
 import airtimeRoutes from "./routes/airtime";
+import adminRoutes from "./routes/admin";
 import { warnIfAgoraUnconfigured } from "./config/agora";
 import { warnIfFlutterwaveUnconfigured } from "./config/flutterwave";
+import { warnIfResendUnconfigured } from "./config/resend";
 import { registerCronJobs } from "./cron";
 import { initSocket } from "./socket";
 
@@ -80,6 +85,7 @@ app.use("/", agoraRoutes);
 app.use("/", prayerRequestRoutes);
 app.use("/", postRoutes);
 app.use("/", airtimeRoutes);
+app.use("/", adminRoutes);
 
 const httpServer = http.createServer(app);
 initSocket(httpServer);
@@ -98,8 +104,12 @@ async function start() {
   warnIfPaystackUnconfigured();
   warnIfAgoraUnconfigured();
   warnIfFlutterwaveUnconfigured();
+  warnIfResendUnconfigured();
 
   registerCronJobs();
+
+  // Sentry error handler must be registered after routes, before listen.
+  Sentry.setupExpressErrorHandler(app);
 
   httpServer.listen(PORT, () => {
     console.log(`[9th Hour API] Listening on port ${PORT} (HTTP + Socket.io)`);

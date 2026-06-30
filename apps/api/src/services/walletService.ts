@@ -30,11 +30,8 @@ interface GiveOfferingResult {
   receipt: OfferingReceipt;
 }
 
-// Tithe/offering transfer. The full `amount` leaves the giver's spendable
-// `balance`; `netAmount` lands in the minister's `pendingWithdrawalBalance`
-// (earnings — kept structurally separate from spendable balance per TRD §4.5).
-// The platform keeps `feeCharged`. Everything happens in one ACID transaction
-// using the atomic guarded-update pattern, so no partial state can persist.
+// Tithe/offering transfer. Full amount leaves spendable balance; net lands in
+// pendingWithdrawalBalance (never merged with balance). All in one transaction.
 export async function giveOffering(params: GiveOfferingParams): Promise<GiveOfferingResult> {
   const { fromUserId, toMinisterId, amount, type, sessionId } = params;
 
@@ -134,10 +131,7 @@ interface RequestWithdrawalResult {
   netPayout: number;
 }
 
-// Atomic withdrawal debit (TRD §4.7 steps 2–5). Debits ONLY pendingWithdrawalBalance
-// (earnings) — never spendable balance — with the same guarded pattern, and logs a
-// pending withdrawal transaction. The external payout is triggered by the caller;
-// settleWithdrawal finalizes or refunds based on the transfer result.
+// Withdrawal debit — pendingWithdrawalBalance only, never spendable balance.
 export async function requestWithdrawal(
   ministerId: string,
   amount: number
@@ -187,10 +181,7 @@ export async function requestWithdrawal(
   return { transactionId, amount, feeCharged, netPayout };
 }
 
-// Finalizes a pending withdrawal. On success → completed. On failure → mark failed
-// and refund the full amount back to pendingWithdrawalBalance (TRD §4.7 step 8).
-// The guarded pending→terminal status transition makes this idempotent, so a
-// replayed transfer webhook can't double-refund or double-complete.
+// On transfer failure, refund the full amount back to pendingWithdrawalBalance.
 export async function settleWithdrawal(
   transactionId: string,
   success: boolean
@@ -232,8 +223,7 @@ interface InitiateAirtimeParams {
   reference: string;
 }
 
-// Debits spendable balance before Flutterwave is called (TRD §6). Caller settles
-// the pending transaction after the provider responds.
+// Debit spendable balance before calling Flutterwave; caller settles after response.
 export async function initiateAirtimePurchase(
   params: InitiateAirtimeParams
 ): Promise<{ transactionId: string }> {

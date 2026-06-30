@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { adminAuth } from "../config/firebase";
+import { firebaseAuth } from "../middleware/firebaseAuth";
 import { User } from "../models/User";
 import { MinisterProfile } from "../models/MinisterProfile";
 import { Wallet } from "../models/Wallet";
@@ -128,6 +129,19 @@ router.post("/sync", async (req: Request, res: Response) => {
   } finally {
     await session.endSession();
   }
+});
+
+// GET /auth/me — caller's profile + role (for admin gating on the client)
+router.get("/me", firebaseAuth, async (req: Request, res: Response) => {
+  const user = await User.findById(req.firebaseUid)
+    .select("fullName username email role fellowshipId avatarUrl")
+    .lean();
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found — call /auth/sync first" });
+  }
+
+  return res.json(user);
 });
 
 export default router;

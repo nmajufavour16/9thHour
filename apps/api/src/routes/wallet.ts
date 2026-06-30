@@ -19,6 +19,7 @@ import {
   settleWithdrawal,
   WalletError,
 } from "../services/walletService";
+import { sendOfferingReceiptEmail } from "../services/email";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ const MIN_FUNDING_NAIRA = 100;
 const MIN_WITHDRAWAL_COINS = 100;
 
 // POST /wallet/purchase/initialize — start a Paystack payment to fund the wallet.
-// The only Naira→coin conversion point in the system (TRD §4.1).
+// Only Naira→coin conversion point in the system.
 router.post(
   "/wallet/purchase/initialize",
   ensurePaystackConfigured,
@@ -129,6 +130,16 @@ router.post("/wallet/give", async (req: Request, res: Response) => {
       sessionId: sessionId ?? null,
     });
 
+    // Receipt email is best-effort — never block the gift response on Resend.
+    void User.findById(fromUserId)
+      .select("email fullName")
+      .lean<{ email: string; fullName: string }>()
+      .then((giver) => {
+        if (!giver?.email) return;
+        return sendOfferingReceiptEmail(giver.email, giver.fullName, result.receipt);
+      })
+      .catch((err) => console.error("[/wallet/give] receipt email failed:", err));
+
     return res.status(201).json({
       message: "Gift sent",
       transactionId: result.transactionId,
@@ -143,9 +154,8 @@ router.post("/wallet/give", async (req: Request, res: Response) => {
   }
 });
 
-// POST /wallet/withdraw — minister cashes out earnings to their verified bank
-// account (TRD §4.7). Debits only pendingWithdrawalBalance; 7% fee; refunds on
-// transfer failure. The async result is finalized by the transfer webhook.
+// Minister cashes out earnings. Debits pendingWithdrawalBalance only; 7% fee;
+// transfer webhook finalizes or refunds.
 router.post(
   "/wallet/withdraw",
   requireRole("minister"),

@@ -1,6 +1,5 @@
-// Platform fee rates per transaction type (TRD §4.3). Tithes and offerings are
-// 3% — the older "0% forever" rule is superseded. Fees always round UP so the
-// platform is never shorted; the invariant amount === feeCharged + netAmount holds.
+// Platform fee rates per transaction type. Tithes and offerings are 3%.
+// Fees round up so amount === feeCharged + netAmount always holds.
 export const FEE_SCHEDULE: Record<string, number> = {
   tithe: 0.03,
   offering: 0.03,

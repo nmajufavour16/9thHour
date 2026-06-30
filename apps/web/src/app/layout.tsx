@@ -29,6 +29,12 @@ export const metadata: Metadata = {
     "9th Hour is your digital temple — a place to pray, share, give, and belong, any hour of the day.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,15 +48,15 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('9h-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);var l=document.createElement('link');l.rel='preload';l.as='image';l.href=t==='light'?'/logo-light.svg':'/logo-dark.svg';document.head.appendChild(l);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('9h-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);var l=document.createElement('link');l.rel='preload';l.as='image';l.href=t==='light'?'/logo-light.png':'/logo-dark.png';document.head.appendChild(l);}catch(e){}})();`,
           }}
         />
       </head>
       <body
-        className={`${playfair.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased bg-bg-primary text-text-primary`}
+        className={`${playfair.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased bg-bg-primary text-text-primary min-h-screen`}
       >
         <ThemeProvider>
-          {children}
+          <div className="min-h-screen pb-20 sm:pb-8">{children}</div>
           <ThemeToggle className="fixed top-4 right-4 z-50" />
         </ThemeProvider>
       </body>

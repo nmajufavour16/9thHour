@@ -4,7 +4,7 @@ import { Wallet } from "../models/Wallet";
 import { Transaction } from "../models/Transaction";
 import { requestWithdrawal, settleWithdrawal, WalletError } from "../services/walletService";
 
-// Exercises the withdrawal ledger (TRD §4.7) without Paystack: 7% fee, debit of
+// Exercises withdrawal ledger without Paystack: 7% fee, debit of pending only,
 // pendingWithdrawalBalance only (spendable balance untouched), insufficient-funds
 // rejection, refund-on-failure, refund idempotency, and success completion.
 const MIN = "test_withdraw_minister";
