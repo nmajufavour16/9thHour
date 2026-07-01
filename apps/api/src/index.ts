@@ -75,6 +75,11 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/fellowships", fellowshipRoutes);
+// Public-read routers first: their routes resolve before the auth-guarded routers
+// below (each applies firebaseAuth across the whole "/" namespace via router.use),
+// so anonymous GETs to the feed and live sessions aren't intercepted and 401'd.
+app.use("/", postRoutes);
+app.use("/", liveSessionRoutes);
 // Mounted at root: each router spells out its full paths so admin actions live
 // under /admin/* while the minister/user-facing routes keep their own prefix.
 app.use("/", verificationRoutes);
@@ -84,10 +89,8 @@ app.use("/", webhookRoutes);
 app.use("/", dailyVerseRoutes);
 app.use("/", quizRoutes);
 app.use("/", streakRoutes);
-app.use("/", liveSessionRoutes);
 app.use("/", agoraRoutes);
 app.use("/", prayerRequestRoutes);
-app.use("/", postRoutes);
 app.use("/", airtimeRoutes);
 app.use("/", adminRoutes);
 
