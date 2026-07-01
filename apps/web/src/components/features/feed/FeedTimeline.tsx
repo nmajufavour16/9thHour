@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Loader2, Users } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import ErrorNotice from "@/components/ui/ErrorNotice";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PostAuthor {
   fullName: string;
@@ -36,6 +37,7 @@ function isFellowshipError(message: string): boolean {
 // Center-column timeline: cursor-paginated posts with IntersectionObserver-driven
 // infinite scroll (real server paging, never client-only slicing).
 export default function FeedTimeline() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -46,6 +48,7 @@ export default function FeedTimeline() {
   const [showCompose, setShowCompose] = useState(false);
   const [body, setBody] = useState("");
   const [postType, setPostType] = useState<(typeof POST_TYPES)[number]>("testimony");
+  const [visibility, setVisibility] = useState<"fellowship" | "public">("fellowship");
   const [submitting, setSubmitting] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -98,7 +101,7 @@ export default function FeedTimeline() {
     try {
       const created = await apiFetch<FeedPost>("posts", {
         method: "POST",
-        body: JSON.stringify({ body: body.trim(), type: postType }),
+        body: JSON.stringify({ body: body.trim(), type: postType, visibility }),
       });
       setPosts((prev) => [created, ...prev]);
       setBody("");
@@ -133,17 +136,27 @@ export default function FeedTimeline() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-text-primary">Home</h1>
-        <button
-          type="button"
-          onClick={() => setShowCompose((s) => !s)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
-          style={{ background: "var(--color-primary)" }}
-        >
-          <Plus size={16} aria-hidden /> Post
-        </button>
+        {user ? (
+          <button
+            type="button"
+            onClick={() => setShowCompose((s) => !s)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "var(--color-primary)" }}
+          >
+            <Plus size={16} aria-hidden /> Post
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "var(--color-primary)" }}
+          >
+            <Plus size={16} aria-hidden /> Sign in to post
+          </Link>
+        )}
       </div>
 
-      {showCompose && (
+      {user && showCompose && (
         <form
           onSubmit={handleSubmit}
           className="mb-6 p-4 rounded-xl border border-border bg-bg-elevated space-y-3"
@@ -158,6 +171,14 @@ export default function FeedTimeline() {
                 {t.replace("_", " ")}
               </option>
             ))}
+          </select>
+          <select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as "fellowship" | "public")}
+            className="w-full px-3 py-2 rounded-lg text-sm border border-border bg-bg-surface text-text-primary"
+          >
+            <option value="fellowship">Fellowship only</option>
+            <option value="public">Public (everyone)</option>
           </select>
           <textarea
             value={body}

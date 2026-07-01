@@ -5,6 +5,7 @@ import { isDbConnectionError } from "../middleware/errorHandler";
 import { User } from "../models/User";
 import { MinisterProfile } from "../models/MinisterProfile";
 import { Wallet } from "../models/Wallet";
+import { updateProfile, requestAccountDeletion, UserError } from "../services/userService";
 import mongoose from "mongoose";
 
 const router = Router();
@@ -141,7 +142,7 @@ router.post("/sync", async (req: Request, res: Response) => {
 // GET /auth/me — caller's profile + role (for admin gating on the client)
 router.get("/me", firebaseAuth, async (req: Request, res: Response) => {
   const user = await User.findById(req.firebaseUid)
-    .select("fullName username email role fellowshipId avatarUrl")
+    .select("fullName username email role fellowshipId avatarUrl bio notificationPrefs privacy")
     .lean();
 
   if (!user) {
@@ -149,6 +150,32 @@ router.get("/me", firebaseAuth, async (req: Request, res: Response) => {
   }
 
   return res.json(user);
+});
+
+// PATCH /auth/me — update the caller's profile and preferences (Settings).
+router.patch("/me", firebaseAuth, async (req: Request, res: Response) => {
+  try {
+    const user = await updateProfile(req.firebaseUid!, req.body ?? {});
+    return res.json(user);
+  } catch (err) {
+    if (err instanceof UserError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// POST /auth/deletion-request — flag the account for deletion (request flow only).
+router.post("/deletion-request", firebaseAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await requestAccountDeletion(req.firebaseUid!);
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    if (err instanceof UserError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    throw err;
+  }
 });
 
 export default router;

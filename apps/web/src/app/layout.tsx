@@ -48,7 +48,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('9h-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);var l=document.createElement('link');l.rel='preload';l.as='image';l.href=t==='light'?'/logo-light.png':'/logo-dark.png';document.head.appendChild(l);}catch(e){}})();`,
+            __html: `(function(){try{var p=localStorage.getItem('9h-theme');if(p!=='light'&&p!=='dark'&&p!=='system')p='dark';var t=p==='system'?((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'):p;document.documentElement.setAttribute('data-theme',t);var l=document.createElement('link');l.rel='preload';l.as='image';l.href=t==='light'?'/logo-light.png':'/logo-dark.png';document.head.appendChild(l);}catch(e){}})();`,
           }}
         />
       </head>

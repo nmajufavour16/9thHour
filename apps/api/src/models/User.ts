@@ -22,6 +22,24 @@ const userSchema = new Schema(
 
     // Earned titles (e.g. "fire_prayer", "bible_scholar"). No points system.
     badges: { type: [String], default: [] },
+
+    // Profile + preferences, managed from Settings.
+    bio: { type: String, default: "", maxlength: 300 },
+    notificationPrefs: {
+      prayerResponses: { type: Boolean, default: true },
+      liveSessions: { type: Boolean, default: true },
+      fellowshipActivity: { type: Boolean, default: true },
+    },
+    privacy: {
+      anonymousPrayerDefault: { type: Boolean, default: false },
+      profileVisibility: {
+        type: String,
+        enum: ["public", "fellowship", "private"],
+        default: "fellowship",
+      },
+    },
+    // Set when the user requests account deletion — a request flag, never a hard delete.
+    deletionRequestedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

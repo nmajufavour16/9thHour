@@ -1,15 +1,13 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { Types } from "mongoose";
-import { firebaseAuth, requireRole } from "../middleware/firebaseAuth";
+import { firebaseAuth, optionalFirebaseAuth, requireRole } from "../middleware/firebaseAuth";
 import { LiveSession } from "../models/LiveSession";
 import { Attendance } from "../models/Attendance";
 import { Fellowship } from "../models/Fellowship";
 import { User } from "../models/User";
 
 const router = Router();
-
-router.use(firebaseAuth);
 
 const CATEGORIES = ["prayer", "worship", "sermon", "counseling"] as const;
 
@@ -32,7 +30,7 @@ async function loadSession(req: Request, res: Response) {
 }
 
 // POST /sessions — minister schedules (or immediately opens) a session.
-router.post("/sessions", requireRole("minister"), async (req: Request, res: Response) => {
+router.post("/sessions", firebaseAuth, requireRole("minister"), async (req: Request, res: Response) => {
   const uid = req.firebaseUid!;
   const { title, category, scheduledAt } = req.body as {
     title?: string;
@@ -65,7 +63,7 @@ router.post("/sessions", requireRole("minister"), async (req: Request, res: Resp
 });
 
 // GET /sessions — browse live and upcoming sessions, soonest first.
-router.get("/sessions", async (req: Request, res: Response) => {
+router.get("/sessions", optionalFirebaseAuth, async (req: Request, res: Response) => {
   const limit = Math.min(50, parseInt((req.query.limit as string) ?? "20", 10));
   const sessions = await LiveSession.find({ status: { $in: ["live", "scheduled"] } })
     .sort({ status: 1, scheduledAt: 1 })
@@ -75,14 +73,14 @@ router.get("/sessions", async (req: Request, res: Response) => {
 });
 
 // GET /sessions/:id
-router.get("/sessions/:id", async (req: Request, res: Response) => {
+router.get("/sessions/:id", optionalFirebaseAuth, async (req: Request, res: Response) => {
   const session = await loadSession(req, res);
   if (!session) return;
   return res.json(session);
 });
 
 // POST /sessions/:id/start — owner takes the session live.
-router.post("/sessions/:id/start", requireRole("minister"), async (req: Request, res: Response) => {
+router.post("/sessions/:id/start", firebaseAuth, requireRole("minister"), async (req: Request, res: Response) => {
   const session = await loadSession(req, res);
   if (!session) return;
   if (session.ministerId !== req.firebaseUid) {
@@ -99,7 +97,7 @@ router.post("/sessions/:id/start", requireRole("minister"), async (req: Request,
 });
 
 // POST /sessions/:id/end — owner ends the session; close any open attendance.
-router.post("/sessions/:id/end", requireRole("minister"), async (req: Request, res: Response) => {
+router.post("/sessions/:id/end", firebaseAuth, requireRole("minister"), async (req: Request, res: Response) => {
   const session = await loadSession(req, res);
   if (!session) return;
   if (session.ministerId !== req.firebaseUid) {
@@ -133,7 +131,7 @@ router.post("/sessions/:id/end", requireRole("minister"), async (req: Request, r
 });
 
 // POST /sessions/:id/attendance/join — record arrival, bump viewer count once.
-router.post("/sessions/:id/attendance/join", async (req: Request, res: Response) => {
+router.post("/sessions/:id/attendance/join", firebaseAuth, async (req: Request, res: Response) => {
   const session = await loadSession(req, res);
   if (!session) return;
   const uid = req.firebaseUid!;
@@ -154,7 +152,7 @@ router.post("/sessions/:id/attendance/join", async (req: Request, res: Response)
 });
 
 // POST /sessions/:id/attendance/leave — stamp departure and duration.
-router.post("/sessions/:id/attendance/leave", async (req: Request, res: Response) => {
+router.post("/sessions/:id/attendance/leave", firebaseAuth, async (req: Request, res: Response) => {
   if (!isValidId(req.params.id)) {
     return res.status(400).json({ error: "Invalid session id" });
   }
@@ -185,7 +183,7 @@ router.post("/sessions/:id/attendance/leave", async (req: Request, res: Response
 });
 
 // GET /sessions/:id/missed — fellowship members who never joined this session.
-router.get("/sessions/:id/missed", requireRole("minister"), async (req: Request, res: Response) => {
+router.get("/sessions/:id/missed", firebaseAuth, requireRole("minister"), async (req: Request, res: Response) => {
   const session = await loadSession(req, res);
   if (!session) return;
   if (session.ministerId !== req.firebaseUid) {

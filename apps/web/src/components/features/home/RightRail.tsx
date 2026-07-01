@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Radio, Flame, Users, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SessionItem {
   _id: string;
@@ -20,6 +21,7 @@ interface StreakInfo {
 // Desktop-only right rail: active live sessions, the viewer's streak, and a
 // fellowship discovery entry point. Hidden below the lg breakpoint.
 export default function RightRail() {
+  const { user } = useAuth();
   const [live, setLive] = useState<SessionItem[]>([]);
   const [streak, setStreak] = useState<StreakInfo | null>(null);
 
@@ -27,10 +29,12 @@ export default function RightRail() {
     apiFetch<SessionItem[]>("sessions")
       .then((sessions) => setLive(sessions.filter((s) => s.status === "live")))
       .catch(() => {});
-    apiFetch<StreakInfo>("streak/me")
-      .then(setStreak)
-      .catch(() => {});
-  }, []);
+    if (user) {
+      apiFetch<StreakInfo>("streak/me")
+        .then(setStreak)
+        .catch(() => {});
+    }
+  }, [user]);
 
   return (
     <aside className="hidden lg:block w-72 shrink-0 border-l border-border p-4 space-y-6">
@@ -62,13 +66,24 @@ export default function RightRail() {
           <Flame size={14} aria-hidden className="text-gold" /> Your streak
         </h2>
         <div className="rounded-lg border border-border bg-bg-elevated px-3 py-3">
-          <p className="text-2xl font-bold text-text-primary">
-            {streak ? streak.prayerStreak : "—"}
-            <span className="ml-1 text-sm font-normal text-text-muted">days</span>
-          </p>
-          <p className="text-xs text-text-secondary mt-0.5">
-            {streak?.checkedInToday ? "Checked in today 🙏" : "Pray today to keep it going"}
-          </p>
+          {user ? (
+            <>
+              <p className="text-2xl font-bold text-text-primary">
+                {streak ? streak.prayerStreak : "—"}
+                <span className="ml-1 text-sm font-normal text-text-muted">days</span>
+              </p>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {streak?.checkedInToday ? "Checked in today 🙏" : "Pray today to keep it going"}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-text-secondary">
+              <Link href="/login" className="underline" style={{ color: "var(--color-primary-light)" }}>
+                Sign in
+              </Link>{" "}
+              to track your prayer streak.
+            </p>
+          )}
         </div>
       </section>
 

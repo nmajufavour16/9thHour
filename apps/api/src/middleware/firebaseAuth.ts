@@ -38,6 +38,37 @@ export async function firebaseAuth(req: Request, res: Response, next: NextFuncti
   return next();
 }
 
+// Like firebaseAuth but never rejects: if a valid token is present it hydrates
+// req.firebaseUid/req.userRole; otherwise the request continues as anonymous.
+// Use on public-read routes that personalize when signed in. Writes still use
+// the strict firebaseAuth. Infra (DB) failures are still forwarded, not masked.
+export async function optionalFirebaseAuth(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return next();
+  }
+
+  let decoded;
+  try {
+    decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
+  } catch {
+    return next(); // bad/expired token on a public route → treat as anonymous
+  }
+
+  let user;
+  try {
+    user = await User.findById(decoded.uid).select("role").lean<{ role: string }>();
+  } catch (err) {
+    return next(err);
+  }
+
+  if (user) {
+    req.firebaseUid = decoded.uid;
+    req.userRole = user.role as "believer" | "minister" | "admin";
+  }
+  return next();
+}
+
 export function requireRole(...roles: Array<"believer" | "minister" | "admin">) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.userRole || !roles.includes(req.userRole)) {

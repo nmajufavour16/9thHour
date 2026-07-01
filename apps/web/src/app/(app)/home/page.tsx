@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import FeedTimeline from "@/components/features/feed/FeedTimeline";
 import PrayerFeed from "@/components/features/prayer/PrayerFeed";
 import RightRail from "@/components/features/home/RightRail";
+import { useAuth } from "@/hooks/useAuth";
 
 type Tab = "feed" | "prayers";
 
@@ -14,6 +16,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 // Feed-first social home: center timeline (Feed / Prayers) plus the desktop right rail.
 export default function HomePage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("feed");
 
   return (
@@ -35,7 +38,24 @@ export default function HomePage() {
           ))}
         </div>
 
-        {tab === "feed" ? <FeedTimeline /> : <PrayerFeed />}
+        {tab === "feed" ? (
+          <FeedTimeline />
+        ) : user ? (
+          <PrayerFeed />
+        ) : (
+          <div className="rounded-2xl border border-border bg-bg-elevated p-8 text-center">
+            <p className="text-sm text-text-secondary mb-4">
+              Prayer requests are private to members. Sign in to see and share them.
+            </p>
+            <Link
+              href="/login"
+              className="inline-flex px-4 py-2 rounded-lg text-sm font-semibold text-white"
+              style={{ background: "var(--color-primary)" }}
+            >
+              Sign in
+            </Link>
+          </div>
+        )}
       </div>
 
       <RightRail />

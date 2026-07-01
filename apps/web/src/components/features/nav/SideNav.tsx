@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
-import { NAV_ITEMS, isNavItemActive } from "@/lib/nav";
+import { Menu, Settings } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import { NAV_ITEMS, isNavItemActive } from "@/lib/nav";
 
 const STORAGE_KEY = "9h-nav-collapsed";
 
@@ -76,6 +76,24 @@ export default function SideNav() {
           );
         })}
       </nav>
+
+      <div className="px-2 py-2 border-t border-border">
+        <Link
+          href="/settings"
+          title={collapsed ? "Settings" : undefined}
+          aria-current={isNavItemActive(pathname, "/settings") ? "page" : undefined}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+            collapsed ? "justify-center" : ""
+          } ${
+            isNavItemActive(pathname, "/settings")
+              ? "bg-bg-elevated text-primary-light"
+              : "text-text-secondary hover:text-text-primary"
+          }`}
+        >
+          <Settings size={20} aria-hidden />
+          {!collapsed && <span>Settings</span>}
+        </Link>
+      </div>
     </aside>
   );
 }

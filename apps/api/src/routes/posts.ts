@@ -1,12 +1,10 @@
 import { Router, Request, Response } from "express";
 import { Types } from "mongoose";
-import { firebaseAuth, requireRole } from "../middleware/firebaseAuth";
+import { firebaseAuth, optionalFirebaseAuth, requireRole } from "../middleware/firebaseAuth";
 import { Post } from "../models/Post";
 import { User } from "../models/User";
 
 const router = Router();
-
-router.use(firebaseAuth);
 
 const POST_TYPES = ["announcement", "testimony", "prayer_point"] as const;
 
@@ -18,6 +16,7 @@ interface PostDoc {
   body: string;
   mediaUrl: string | null;
   seedCount: number;
+  visibility: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,6 +73,7 @@ function serializePost(post: PostDoc, author?: AuthorSummary | null) {
     body: post.body,
     mediaUrl: post.mediaUrl,
     seedCount: post.seedCount,
+    visibility: post.visibility,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
     author: author ?? null,
@@ -81,15 +81,16 @@ function serializePost(post: PostDoc, author?: AuthorSummary | null) {
 }
 
 // POST /posts
-router.post("/posts", async (req: Request, res: Response) => {
+router.post("/posts", firebaseAuth, async (req: Request, res: Response) => {
   const uid = req.firebaseUid!;
   const fellowshipId = await loadUserFellowship(req, res);
   if (!fellowshipId) return;
 
-  const { body, type, mediaUrl } = req.body as {
+  const { body, type, mediaUrl, visibility } = req.body as {
     body?: string;
     type?: string;
     mediaUrl?: string;
+    visibility?: string;
   };
 
   if (!body?.trim()) {
@@ -105,6 +106,7 @@ router.post("/posts", async (req: Request, res: Response) => {
     type,
     body: body.trim(),
     mediaUrl: mediaUrl?.trim() || null,
+    visibility: visibility === "public" ? "public" : "fellowship",
   });
 
   const author = await User.findById(uid)
@@ -114,15 +116,24 @@ router.post("/posts", async (req: Request, res: Response) => {
   return res.status(201).json(serializePost(post, author));
 });
 
-// GET /posts — chronological feed, newest first; cursor = last post _id
-router.get("/posts", async (req: Request, res: Response) => {
-  const fellowshipId = await loadUserFellowship(req, res);
-  if (!fellowshipId) return;
-
+// GET /posts — chronological feed, newest first; cursor = last post _id.
+// Signed-in members with a fellowship get their fellowship feed; everyone else
+// (logged out, or no fellowship yet) gets the public feed.
+router.get("/posts", optionalFirebaseAuth, async (req: Request, res: Response) => {
   const limit = Math.min(50, parseInt((req.query.limit as string) ?? "20", 10));
   const cursor = req.query.cursor as string | undefined;
 
-  const filter: Record<string, unknown> = { fellowshipId };
+  let fellowshipId: Types.ObjectId | null = null;
+  if (req.firebaseUid) {
+    const user = await User.findById(req.firebaseUid)
+      .select("fellowshipId")
+      .lean<{ fellowshipId: Types.ObjectId | null }>();
+    fellowshipId = user?.fellowshipId ?? null;
+  }
+
+  const filter: Record<string, unknown> = fellowshipId
+    ? { fellowshipId }
+    : { visibility: "public" };
 
   if (cursor && Types.ObjectId.isValid(cursor)) {
     const cursorPost = await Post.findById(cursor).select("createdAt").lean<{ createdAt: Date }>();
@@ -145,10 +156,31 @@ router.get("/posts", async (req: Request, res: Response) => {
   return res.json({ items, nextCursor });
 });
 
-// GET /posts/:id
-router.get("/posts/:id", async (req: Request, res: Response) => {
-  const post = await loadPost(req, res);
-  if (!post) return;
+// GET /posts/:id — public posts are visible to anyone; fellowship posts require
+// membership of that fellowship.
+router.get("/posts/:id", optionalFirebaseAuth, async (req: Request, res: Response) => {
+  if (!Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: "Invalid post id" });
+  }
+  const post = await Post.findById(req.params.id).lean<PostDoc>();
+  if (!post) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  if (post.visibility !== "public") {
+    let fellowshipId: Types.ObjectId | null = null;
+    if (req.firebaseUid) {
+      const user = await User.findById(req.firebaseUid)
+        .select("fellowshipId")
+        .lean<{ fellowshipId: Types.ObjectId | null }>();
+      fellowshipId = user?.fellowshipId ?? null;
+    }
+    if (!fellowshipId || !post.fellowshipId.equals(fellowshipId)) {
+      return req.firebaseUid
+        ? res.status(403).json({ error: "This post is not in your fellowship" })
+        : res.status(401).json({ error: "Sign in to view this post" });
+    }
+  }
 
   const author = await User.findById(post.authorId)
     .select("fullName username avatarUrl")
@@ -158,7 +190,7 @@ router.get("/posts/:id", async (req: Request, res: Response) => {
 });
 
 // PATCH /posts/:id
-router.patch("/posts/:id", async (req: Request, res: Response) => {
+router.patch("/posts/:id", firebaseAuth, async (req: Request, res: Response) => {
   const post = await loadPost(req, res);
   if (!post) return;
 
@@ -190,7 +222,7 @@ router.patch("/posts/:id", async (req: Request, res: Response) => {
 });
 
 // DELETE /posts/:id
-router.delete("/posts/:id", async (req: Request, res: Response) => {
+router.delete("/posts/:id", firebaseAuth, async (req: Request, res: Response) => {
   const post = await loadPost(req, res);
   if (!post) return;
 

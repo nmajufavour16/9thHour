@@ -21,14 +21,14 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new ApiError(401, "Not signed in");
-  }
-
-  const idToken = await user.getIdToken();
   const headers = new Headers(options.headers);
-  headers.set("Authorization", `Bearer ${idToken}`);
+
+  // Attach the caller's Firebase token when signed in; public reads (feed, live
+  // sessions) work without one. Writes are enforced server-side and 401 if absent.
+  const user = auth.currentUser;
+  if (user) {
+    headers.set("Authorization", `Bearer ${await user.getIdToken()}`);
+  }
   if (options.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
