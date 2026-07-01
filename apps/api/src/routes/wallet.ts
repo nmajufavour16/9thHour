@@ -9,6 +9,7 @@ import {
   initiatePaystackTransfer,
 } from "../lib/paystack";
 import { User } from "../models/User";
+import { Wallet } from "../models/Wallet";
 import { Transaction } from "../models/Transaction";
 import { ExchangeRateConfig } from "../models/ExchangeRateConfig";
 import { MinisterProfile } from "../models/MinisterProfile";
@@ -27,6 +28,58 @@ router.use(firebaseAuth);
 
 const MIN_FUNDING_NAIRA = 100;
 const MIN_WITHDRAWAL_COINS = 100;
+
+// GET /wallet — the caller's balances.
+router.get("/wallet", async (req: Request, res: Response) => {
+  const uid = req.firebaseUid!;
+  const wallet = await Wallet.findOne({ userId: uid })
+    .select("balance pendingWithdrawalBalance totalEarnedAllTime totalWithdrawnAllTime")
+    .lean();
+  if (!wallet) {
+    return res.status(404).json({ error: "Wallet not found" });
+  }
+  return res.json(wallet);
+});
+
+// GET /wallet/transactions — the caller's transaction history, newest first,
+// each tagged in/out relative to the caller.
+router.get("/wallet/transactions", async (req: Request, res: Response) => {
+  const uid = req.firebaseUid!;
+  const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
+  const limit = Math.min(50, parseInt((req.query.limit as string) ?? "20", 10));
+
+  const rows = await Transaction.find({ $or: [{ fromUserId: uid }, { toMinisterId: uid }] })
+    .select("fromUserId toMinisterId type amount feeCharged netAmount status createdAt")
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean<
+      Array<{
+        _id: unknown;
+        fromUserId: string | null;
+        toMinisterId: string | null;
+        type: string;
+        amount: number;
+        feeCharged: number;
+        netAmount: number;
+        status: string;
+        createdAt: Date;
+      }>
+    >();
+
+  const items = rows.map((t) => ({
+    _id: String(t._id),
+    type: t.type,
+    amount: t.amount,
+    feeCharged: t.feeCharged,
+    netAmount: t.netAmount,
+    status: t.status,
+    createdAt: t.createdAt,
+    direction: t.fromUserId === uid ? "out" : "in",
+  }));
+
+  return res.json({ items, page, limit });
+});
 
 // POST /wallet/purchase/initialize — start a Paystack payment to fund the wallet.
 // Only Naira→coin conversion point in the system.
