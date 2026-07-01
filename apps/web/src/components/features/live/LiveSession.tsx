@@ -11,6 +11,7 @@ import type {
 import { Mic, MicOff, Video, VideoOff, WifiOff, PhoneOff } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import SessionChat from "./SessionChat";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 // Renders one Agora RTC session. The host publishes camera + mic; everyone else
 // subscribes. On a poor downlink the UI drops to audio-only to stay usable on
@@ -39,7 +40,7 @@ const POOR_DOWNLINK = 4;
 export default function LiveSession({ sessionId, channelName, isHost, title, onLeave }: Props) {
   // UI state shown to the viewer.
   const [phase, setPhase] = useState<Phase>("connecting");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [audioOnly, setAudioOnly] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
   const [micOn, setMicOn] = useState(true);
@@ -142,7 +143,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
 
     start().catch((err: unknown) => {
       if (cancelled) return;
-      setError(err instanceof Error ? err.message : "Could not connect to the session");
+      setError(err);
       setPhase("error");
     });
 
@@ -221,11 +222,7 @@ export default function LiveSession({ sessionId, channelName, isHost, title, onL
         </div>
       )}
 
-      {error && (
-        <p className="text-sm" style={{ color: "var(--color-error)" }}>
-          {error}
-        </p>
-      )}
+      <ErrorNotice error={error} />
 
       <div
         className="relative w-full aspect-video rounded-xl overflow-hidden"

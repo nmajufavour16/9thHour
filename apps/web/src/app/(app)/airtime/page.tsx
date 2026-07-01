@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Smartphone } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 const AMOUNTS = [100, 500, 1000, 2000, 5000] as const;
 
@@ -21,7 +22,7 @@ export default function AirtimePage() {
   const [amount, setAmount] = useState<number>(500);
   const [customAmount, setCustomAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [success, setSuccess] = useState<PurchaseResult | null>(null);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function AirtimePage() {
       });
       setSuccess(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Purchase failed");
+      setError(err);
     } finally {
       setSubmitting(false);
     }
@@ -139,11 +140,7 @@ export default function AirtimePage() {
           />
         </div>
 
-        {error && (
-          <p className="text-sm" style={{ color: "var(--color-error)" }}>
-            {error}
-          </p>
-        )}
+        <ErrorNotice error={error} />
 
         {success && (
           <p className="text-sm" style={{ color: "var(--color-success, #38A169)" }}>

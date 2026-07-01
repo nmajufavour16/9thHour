@@ -7,6 +7,7 @@ import { Radio } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import LiveSession from "@/components/features/live/LiveSession";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 interface SessionDetail {
   _id: string;
@@ -23,7 +24,7 @@ export default function SessionPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [session, setSession] = useState<SessionDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [joined, setJoined] = useState(false);
   const [starting, setStarting] = useState(false);
 
@@ -32,7 +33,7 @@ export default function SessionPage() {
       const data = await apiFetch<SessionDetail>(`sessions/${params.id}`);
       setSession(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load session");
+      setError(err);
     }
   }
 
@@ -52,7 +53,7 @@ export default function SessionPage() {
   if (error) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-3">
-        <p style={{ color: "var(--color-error)" }}>{error}</p>
+        <ErrorNotice error={error} />
         <Link href="/sessions" className="underline text-sm" style={{ color: "var(--color-primary-light)" }}>
           Back to sessions
         </Link>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, Users } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 interface PrayerItem {
   _id: string;
@@ -21,16 +22,16 @@ interface PrayerItem {
 // pastoral action and is never surfaced here.
 export default function PrayerFeed() {
   const [items, setItems] = useState<PrayerItem[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [needsFellowship, setNeedsFellowship] = useState(false);
 
   useEffect(() => {
     apiFetch<PrayerItem[]>("prayer-requests")
       .then(setItems)
       .catch((err) => {
-        const message = err instanceof Error ? err.message : "Could not load prayer requests";
+        const message = err instanceof Error ? err.message : "";
         if (/fellowship/i.test(message)) setNeedsFellowship(true);
-        else setError(message);
+        else setError(err);
       });
   }, []);
 
@@ -53,7 +54,7 @@ export default function PrayerFeed() {
     );
   }
 
-  if (error) return <p className="text-sm text-error">{error}</p>;
+  if (error) return <ErrorNotice error={error} />;
   if (!items) return <p className="text-text-muted">Loading prayer requests…</p>;
   if (items.length === 0) {
     return <p className="text-text-secondary">No prayer requests yet.</p>;

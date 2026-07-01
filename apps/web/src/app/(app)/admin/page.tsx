@@ -6,6 +6,7 @@ import { Shield, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 interface Overview {
   openReports: number;
@@ -51,7 +52,7 @@ export default function AdminPage() {
   const [verifications, setVerifications] = useState<VerificationItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [coinsPerNaira, setCoinsPerNaira] = useState("0.85");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
   const loadOverview = useCallback(async () => {
@@ -83,7 +84,7 @@ export default function AdminPage() {
         : tab === "reports"
         ? loadReports
         : loadOverview;
-    load().catch((err) => setError(err instanceof Error ? err.message : "Load failed"));
+    load().catch((err) => setError(err));
   }, [tab, authLoading, profileLoading, isAdmin, loadOverview, loadVerifications, loadReports]);
 
   async function approveVerification(id: string) {
@@ -93,7 +94,7 @@ export default function AdminPage() {
       await loadVerifications();
       await loadOverview();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Approve failed");
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -110,7 +111,7 @@ export default function AdminPage() {
       });
       await loadVerifications();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reject failed");
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -126,7 +127,7 @@ export default function AdminPage() {
       await loadReports();
       await loadOverview();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -147,7 +148,7 @@ export default function AdminPage() {
       await loadOverview();
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update rate");
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -201,11 +202,7 @@ export default function AdminPage() {
         ))}
       </nav>
 
-      {error && (
-        <p className="mb-4 text-sm px-3 py-2 rounded-lg" style={{ color: "var(--color-error)", background: "var(--color-bg-elevated)" }}>
-          {error}
-        </p>
-      )}
+      <ErrorNotice error={error} className="mb-4" />
 
       {tab === "overview" && overview && (
         <div className="space-y-4">

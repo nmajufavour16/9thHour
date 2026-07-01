@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, FormEvent } from "react";
 import Link from "next/link";
 import { Plus, Loader2, Users } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 interface PostAuthor {
   fullName: string;
@@ -40,7 +41,7 @@ export default function FeedTimeline() {
   const [hasMore, setHasMore] = useState(true);
   const [fetching, setFetching] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [needsFellowship, setNeedsFellowship] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
   const [body, setBody] = useState("");
@@ -62,9 +63,9 @@ export default function FeedTimeline() {
     setFetching(true);
     loadPage(null, false)
       .catch((err) => {
-        const message = err instanceof Error ? err.message : "Could not load feed";
+        const message = err instanceof Error ? err.message : "";
         if (isFellowshipError(message)) setNeedsFellowship(true);
-        else setError(message);
+        else setError(err);
       })
       .finally(() => setFetching(false));
   }, [loadPage]);
@@ -79,7 +80,7 @@ export default function FeedTimeline() {
         if (!entries[0]?.isIntersecting || !cursor) return;
         setLoadingMore(true);
         loadPage(cursor, true)
-          .catch((err) => setError(err instanceof Error ? err.message : "Could not load more"))
+          .catch((err) => setError(err))
           .finally(() => setLoadingMore(false));
       },
       { rootMargin: "200px" }
@@ -103,7 +104,7 @@ export default function FeedTimeline() {
       setBody("");
       setShowCompose(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not post");
+      setError(err);
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +177,7 @@ export default function FeedTimeline() {
         </form>
       )}
 
-      {error && <p className="mb-4 text-sm text-error">{error}</p>}
+      <ErrorNotice error={error} className="mb-4" />
 
       {fetching ? (
         <p className="text-text-muted">Loading feed…</p>

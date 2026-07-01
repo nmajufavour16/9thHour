@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Radio, Plus, Calendar } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 
 interface SessionSummary {
   _id: string;
@@ -21,7 +22,7 @@ export default function SessionsPage() {
   const { user, loading } = useAuth();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   // Pull the live + upcoming session list from the backend.
@@ -31,7 +32,7 @@ export default function SessionsPage() {
       const data = await apiFetch<SessionSummary[]>("sessions");
       setSessions(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load sessions");
+      setError(err);
     } finally {
       setFetching(false);
     }
@@ -67,7 +68,7 @@ export default function SessionsPage() {
 
       {showCreate && <CreateSession onCreated={() => { setShowCreate(false); load(); }} />}
 
-      {error && <p className="text-sm mb-4" style={{ color: "var(--color-error)" }}>{error}</p>}
+      <ErrorNotice error={error} className="mb-4" />
 
       {fetching ? (
         <p style={{ color: "var(--color-text-muted)" }}>Loading…</p>
@@ -112,7 +113,7 @@ function CreateSession({ onCreated }: { onCreated: () => void }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("prayer");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -125,7 +126,7 @@ function CreateSession({ onCreated }: { onCreated: () => void }) {
       });
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create session");
+      setError(err);
     } finally {
       setSubmitting(false);
     }
@@ -155,7 +156,7 @@ function CreateSession({ onCreated }: { onCreated: () => void }) {
           <option key={c} value={c}>{c}</option>
         ))}
       </select>
-      {error && <p className="text-sm" style={{ color: "var(--color-error)" }}>{error}</p>}
+      <ErrorNotice error={error} />
       <button
         type="submit"
         disabled={submitting}
